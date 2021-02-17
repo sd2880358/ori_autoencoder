@@ -29,7 +29,8 @@ def rotate_vector(vector, matrix):
 
 
 def ori_cross_loss(model, x, z, d):
-    c, s = np.cos(d), np.sin(d)
+    angle = np.radians(d)
+    c, s = np.cos(angle), np.sin(angle)
     latent = model.latent_dim
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, -s], [s, c]
@@ -40,7 +41,8 @@ def ori_cross_loss(model, x, z, d):
 
 
 def rota_cross_loss(model, x, z, d):
-    c, s = np.cos(d), np.sin(d)
+    angle = np.radians(d)
+    c, s = np.cos(angle), np.sin(angle)
     latent = model.latent_dim
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
