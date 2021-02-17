@@ -109,8 +109,8 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             end_time = time.time()
 
             loss = tf.keras.metrics.Mean()
-            for test_x in test_dataset:
-                loss(compute_loss(model, test_x))
+        for test_x in test_dataset:
+            loss(compute_loss(model, test_x))
             elbo = -loss.result()
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                     .format(epoch, elbo, end_time - start_time))
