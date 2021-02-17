@@ -111,10 +111,10 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             loss = tf.keras.metrics.Mean()
         for test_x in test_dataset:
             loss(compute_loss(model, test_x))
-            elbo = -loss.result()
-            print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
-                    .format(epoch, elbo, end_time - start_time))
-            generate_and_save_images(model, epoch, test_sample)
+        elbo = -loss.result()
+        print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
+                .format(epoch, elbo, end_time - start_time))
+        generate_and_save_images(model, epoch, test_sample)
         if (epoch + 1) % 10 == 0:
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
