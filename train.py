@@ -143,9 +143,9 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         loss = tf.keras.metrics.Mean()
         d = random.randint(30, 90)
         for test_x in test_dataset:
-            loss(compute_loss(model, test_x),
+            loss([compute_loss(model, test_x),
                  rota_cross_loss(model, test_x, d),
-                 ori_cross_loss(model, test_x, d))
+                 ori_cross_loss(model, test_x, d)])
         elbo = -loss.result()
         print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                 .format(epoch, elbo, end_time - start_time))
