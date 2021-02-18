@@ -9,6 +9,7 @@ from tensorflow.linalg import matvec
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+from IPython import display
 
 optimizer = tf.keras.optimizers.Adam(1e-4)
 mse = tf.losses.MeanSquaredError()
@@ -65,6 +66,11 @@ def compute_loss(model, x, beta=4):
     x_logit = model.decode(z)
     d = random.randint(0, 360)
     r_x = rotate(x, -d)
+    r_mean, r_logvar = model.encoder(r_x)
+    r_z = model.reparameterize(r_mean, r_logvar)
+    r_x_logit = model.decoder(r_z)
+    r_cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=r_x_logit, label=r_x)
+    r_logx_z = -tf.reduce_sum(r_cross_ent, axis=[1,2,3])
     ori_loss = ori_cross_loss(model, r_x, z, d)
     rotate_loss = rota_cross_loss(model, x, z, d)
     '''
@@ -77,7 +83,7 @@ def compute_loss(model, x, beta=4):
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
 
-    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x) ) + rotate_loss + ori_loss
+    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x) + rotate_loss + ori_loss + r_logx_z)
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -116,6 +122,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     for test_batch in test_dataset.take(1):
         test_sample = test_batch[0:num_examples_to_generate, :, :, :]
     generate_and_save_images(model, 0, test_sample)
+    display.clear_output(wait=False)
     for epoch in range(1, epochs + 1):
         start_time = time.time()
         for train_x in train_dataset:
