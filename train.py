@@ -80,7 +80,7 @@ def compute_loss(model, x, beta=4):
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
 
-    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x) + rotate_loss + ori_loss)
+    return -tf.reduce_mean(logpx_z + logpz - beta * logqz_x + rotate_loss + ori_loss)
 
 
 def generate_and_save_images(model, epoch, test_sample):
