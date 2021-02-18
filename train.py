@@ -55,13 +55,15 @@ def ori_cross_loss(model, x, d):
     return logx_z
 
 
-def rota_cross_loss(model, x, z, d):
+def rota_cross_loss(model, x, d):
     angle = np.radians(d)
     r_x = rotate(x, -d)
     c, s = np.cos(angle), np.sin(angle)
     latent = model.latent_dim
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
+    mean, logvar = model.encode(x)
+    z = model.decoder(mean, logvar)
     phi_z = rotate_vector(z, r_m)
     phi_x = model.decode(phi_z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=r_x)
@@ -73,9 +75,6 @@ def compute_loss(model, x, beta=4):
     mean, logvar = model.encode(x)
     z = model.reparameterize(mean, logvar)
     x_logit = model.decode(z)
-    d = random.randint(30, 90)
-    ori_loss = ori_cross_loss(model, x, d)
-    rotate_loss = rota_cross_loss(model, x, z, d)
     '''
     reco_loss = reconstruction_loss(x_logit, x)
     kl_loss = kl_divergence(logvar, mean)
@@ -85,8 +84,7 @@ def compute_loss(model, x, beta=4):
     logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
-
-    return -tf.reduce_mean(logpx_z + logpz - beta * logqz_x + rotate_loss + ori_loss)
+    return -tf.reduce_mean(logpx_z + logpz - beta * logqz_x)
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -111,15 +109,20 @@ def generate_and_save_images(model, epoch, test_sample):
 def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     @tf.function
     def train_step(model, x, optimizer):
+        d = random.randint(30, 90)
         with tf.GradientTape() as tape:
-            loss = compute_loss(model, x)
-            d = random.randint(30, 90)
+            ori_loss = compute_loss(model, x)
             r_x = rotate(x, d)
-            r_loss = reconstruction_loss(model, r_x)
-            total_loss = loss + r_loss
+            rota_loss = compute_loss(model, r_x)
+            total_loss = ori_loss + rota_loss
         gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
+        with tf.GradientTape() as tape:
+            ori_loss = ori_cross_loss(model, x, d)
+            rota_loss = rota_cross_loss(model, x, d)
+            total_loss = ori_loss + rota_loss
+        gradients = tape.gradient(total_loss, model.trainable_variables)
+        optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     checkpoint_path = "./checkpoints/"+ date + filePath
     ckpt = tf.train.Checkpoint(model=model,
                                optimizer=optimizer)
@@ -137,9 +140,12 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             train_step(model, train_x, optimizer)
             end_time = time.time()
 
-            loss = tf.keras.metrics.Mean()
+        loss = tf.keras.metrics.Mean()
+        d = random.randint(30, 90)
         for test_x in test_dataset:
-            loss(compute_loss(model, test_x))
+            loss(compute_loss(model, test_x),
+                 rota_cross_loss(model, test_x, d),
+                 ori_cross_loss(model, test_x, d))
         elbo = -loss.result()
         print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                 .format(epoch, elbo, end_time - start_time))
@@ -169,6 +175,6 @@ if __name__ == '__main__':
         shape=[num_examples_to_generate, 10])
     model = model.CVAE(latent_dim=10)
     date = '2_18'
-    file_path = 'method1'
+    file_path = 'method2'
     start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
