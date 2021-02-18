@@ -12,6 +12,7 @@ import os
 
 optimizer = tf.keras.optimizers.Adam(1e-4)
 mse = tf.losses.MeanSquaredError()
+mbs = tf.losses.MeanAbsoluteError()
 
 
 def reconstruction_loss(X, X_pred):
@@ -66,15 +67,17 @@ def compute_loss(model, x, beta=4):
     r_x = rotate(x, -d)
     ori_loss = ori_cross_loss(model, r_x, z, d)
     rotate_loss = rota_cross_loss(model, x, z, d)
+    '''
     reco_loss = reconstruction_loss(x_logit, x)
     kl_loss = kl_divergence(logvar, mean)
     beta_loss = reco_loss + kl_loss * beta
     '''
+    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
     logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
-    '''
-    return beta_loss + rotate_loss + ori_loss
+
+    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x) + rotate_loss + ori_loss)
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -90,7 +93,7 @@ def generate_and_save_images(model, epoch, test_sample):
     file_dir = './image/' + file_path
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
-    plt.savefig('./image/image_at_epoch_{:04d}.png'.format(epoch))
+    plt.savefig(file_dir +'/image_at_epoch_{:04d}.png'.format(epoch))
 
 
 
@@ -151,6 +154,6 @@ if __name__ == '__main__':
         shape=[num_examples_to_generate, 10])
     model = model.CVAE(latent_dim=10)
     date = '2_17'
-    file_path = 'method2'
+    file_path = 'method3'
     start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
