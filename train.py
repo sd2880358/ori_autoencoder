@@ -64,7 +64,7 @@ def compute_loss(model, x, beta=4):
     mean, logvar = model.encode(x)
     z = model.reparameterize(mean, logvar)
     x_logit = model.decode(z)
-    d = random.randint(0, 360)
+    d = random.randint(30, 90)
     r_x = rotate(x, -d)
     ori_loss = ori_cross_loss(model, r_x, z, d)
     rotate_loss = rota_cross_loss(model, x, z, d)
@@ -78,7 +78,7 @@ def compute_loss(model, x, beta=4):
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
 
-    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x) + rotate_loss + ori_loss)
+    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x)) + rotate_loss + ori_loss
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -104,7 +104,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     def train_step(model, x, optimizer):
         with tf.GradientTape() as tape:
             loss = compute_loss(model, x)
-            d = random.randint(0, 360)
+            d = random.randint(30, 90)
             r_x = rotate(x, d)
             r_loss = compute_loss(model, r_x)
             total_loss = loss + r_loss
