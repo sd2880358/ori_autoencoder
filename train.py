@@ -63,7 +63,7 @@ def rota_cross_loss(model, x, d):
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
     mean, logvar = model.encode(x)
-    z = model.decoder(mean, logvar)
+    z = model.reparameterize(mean, logvar)
     phi_z = rotate_vector(z, r_m)
     phi_x = model.decode(phi_z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=r_x)
@@ -120,7 +120,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         with tf.GradientTape() as tape:
             ori_loss = ori_cross_loss(model, x, d)
             rota_loss = rota_cross_loss(model, x, d)
-            total_loss = ori_loss + rota_loss
+            total_loss = -tf.reduce_mean(ori_loss + rota_loss)
         gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     checkpoint_path = "./checkpoints/"+ date + filePath
