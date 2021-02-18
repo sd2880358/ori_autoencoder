@@ -12,17 +12,16 @@ import os
 from IPython import display
 
 optimizer = tf.keras.optimizers.Adam(1e-4)
-mse = tf.losses.MeanSquaredError()
 mbs = tf.losses.MeanAbsoluteError()
-
+cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 def reconstruction_loss(model, X):
     mean, logvar = model.encode(X)
     Z = model.reparameterize(mean, logvar)
     X_pred = model.decode(Z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=X_pred, labels=X)
-
-    return -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    return -tf.reduce_mean(logx_z)
 
 
 def log_normal_pdf(sample, mean, logvar, raxis=1):
@@ -52,8 +51,8 @@ def ori_cross_loss(model, x, d):
     phi_z = rotate_vector(r_z, r_m)
     phi_x = model.decode(phi_z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=x)
-    cross_loss = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    return cross_loss
+    logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    return logx_z
 
 
 def rota_cross_loss(model, x, z, d):
@@ -66,8 +65,8 @@ def rota_cross_loss(model, x, z, d):
     phi_z = rotate_vector(z, r_m)
     phi_x = model.decode(phi_z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=r_x)
-    cross_loss = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    return cross_loss
+    logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    return logx_z
 
 
 def compute_loss(model, x, beta=4):
