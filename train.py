@@ -14,6 +14,10 @@ optimizer = tf.keras.optimizers.Adam(1e-4)
 mse = tf.losses.MeanSquaredError()
 
 
+def reconstruction_loss(X, X_pred):
+    return mse(X, X_pred)
+
+
 
 def log_normal_pdf(sample, mean, logvar, raxis=1):
     log2pi = tf.math.log(2. * np.pi)
@@ -21,6 +25,8 @@ def log_normal_pdf(sample, mean, logvar, raxis=1):
         -.5 * ((sample - mean) ** 2. * tf.exp(-logvar) + logvar + log2pi),
         axis=raxis)
 
+def kl_divergence(logvar, mean):
+    return -0.5 * tf.reduce_mean((1 + logvar - mean**2 - tf.exp(logvar)))
 
 def rotate_vector(vector, matrix):
     matrix = tf.cast(matrix, tf.float32)
@@ -53,7 +59,7 @@ def rota_cross_loss(model, x, z, d):
     return l_q
 
 
-def compute_loss(model, x):
+def compute_loss(model, x, beta=4):
     mean, logvar = model.encode(x)
     z = model.reparameterize(mean, logvar)
     x_logit = model.decode(z)
@@ -61,11 +67,15 @@ def compute_loss(model, x):
     r_x = rotate(x, -d)
     ori_loss = ori_cross_loss(model, r_x, z, d)
     rotate_loss = rota_cross_loss(model, x, z, d)
-    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
+    reco_loss = reconstruction_loss(x_logit, x)
+    kl_loss = kl_divergence(logvar, mean)
+    beta_loss = reco_loss + kl_loss * beta
+    '''
     logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
-    return -tf.reduce_mean(logpx_z + logpz - logqz_x) + rotate_loss + ori_loss
+    '''
+    return beta_loss + rotate_loss + ori_loss
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -78,7 +88,7 @@ def generate_and_save_images(model, epoch, test_sample):
         plt.subplot(4, 4, i + 1)
         plt.imshow(predictions[i, :, :, 0], cmap='gray')
         plt.axis('off')
-    file_dir = './image'
+    file_dir = './image/' + file_path
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
     plt.savefig('./image/image_at_epoch_{:04d}.png'.format(epoch))
@@ -141,7 +151,7 @@ if __name__ == '__main__':
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
     model = model.CVAE(latent_dim=10)
-    date = '2/17'
-    file_path = 'method1'
+    date = '2_17'
+    file_path = 'method2'
     start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
