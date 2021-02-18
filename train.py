@@ -43,8 +43,9 @@ def ori_cross_loss(model, x, z, d):
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, -s], [s, c]
     phi_z = rotate_vector(z, r_m)
     phi_x = model.decode(phi_z)
-    l_q = mse(x, phi_x)
-    return l_q
+    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=x)
+    cross_loss = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    return cross_loss
 
 
 def rota_cross_loss(model, x, z, d):
@@ -56,8 +57,9 @@ def rota_cross_loss(model, x, z, d):
     phi_z = rotate_vector(z, r_m)
     phi_q = model.decode(phi_z)
     phi_x = rotate(x, -d)
-    l_q = mse(phi_q, phi_x)
-    return l_q
+    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_q, labels=phi_x)
+    cross_loss = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    return cross_loss
 
 
 def compute_loss(model, x, beta=4):
@@ -78,7 +80,7 @@ def compute_loss(model, x, beta=4):
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
 
-    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x)) + rotate_loss + ori_loss
+    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x) + rotate_loss + ori_loss)
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -160,6 +162,6 @@ if __name__ == '__main__':
         shape=[num_examples_to_generate, 10])
     model = model.CVAE(latent_dim=10)
     date = '2_18'
-    file_path = 'method5'
+    file_path = 'method6'
     start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
