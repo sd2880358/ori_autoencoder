@@ -18,7 +18,6 @@ def reconstruction_loss(X, X_pred):
     return mse(X, X_pred)
 
 
-
 def log_normal_pdf(sample, mean, logvar, raxis=1):
     log2pi = tf.math.log(2. * np.pi)
     return tf.reduce_sum(
