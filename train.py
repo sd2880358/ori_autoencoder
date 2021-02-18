@@ -16,8 +16,13 @@ mse = tf.losses.MeanSquaredError()
 mbs = tf.losses.MeanAbsoluteError()
 
 
-def reconstruction_loss(X, X_pred):
-    return mse(X, X_pred)
+def reconstruction_loss(model, X):
+    mean, logvar = model.encode(X)
+    Z = model.reparameterize(mean, logvar)
+    X_pred = model.decode(Z)
+    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=X_pred, labels=X)
+
+    return -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
 
 
 def log_normal_pdf(sample, mean, logvar, raxis=1):
@@ -35,13 +40,16 @@ def rotate_vector(vector, matrix):
     return test
 
 
-def ori_cross_loss(model, x, z, d):
+def ori_cross_loss(model, x, d):
+    r_x = rotate(x, -d)
+    mean, logvar = model.encode(r_x)
+    r_z = model.reparameterize(mean, logvar)
     angle = np.radians(d)
     c, s = np.cos(angle), np.sin(angle)
     latent = model.latent_dim
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, -s], [s, c]
-    phi_z = rotate_vector(z, r_m)
+    phi_z = rotate_vector(r_z, r_m)
     phi_x = model.decode(phi_z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=x)
     cross_loss = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
@@ -50,14 +58,14 @@ def ori_cross_loss(model, x, z, d):
 
 def rota_cross_loss(model, x, z, d):
     angle = np.radians(d)
+    r_x = rotate(x, -d)
     c, s = np.cos(angle), np.sin(angle)
     latent = model.latent_dim
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
     phi_z = rotate_vector(z, r_m)
-    phi_q = model.decode(phi_z)
-    phi_x = rotate(x, -d)
-    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_q, labels=phi_x)
+    phi_x = model.decode(phi_z)
+    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=r_x)
     cross_loss = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     return cross_loss
 
@@ -67,8 +75,7 @@ def compute_loss(model, x, beta=4):
     z = model.reparameterize(mean, logvar)
     x_logit = model.decode(z)
     d = random.randint(30, 90)
-    r_x = rotate(x, -d)
-    ori_loss = ori_cross_loss(model, r_x, z, d)
+    ori_loss = ori_cross_loss(model, x, d)
     rotate_loss = rota_cross_loss(model, x, z, d)
     '''
     reco_loss = reconstruction_loss(x_logit, x)
@@ -97,6 +104,7 @@ def generate_and_save_images(model, epoch, test_sample):
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
     plt.savefig(file_dir +'/image_at_epoch_{:04d}.png'.format(epoch))
+    plt.close()
 
 
 
@@ -108,7 +116,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             loss = compute_loss(model, x)
             d = random.randint(30, 90)
             r_x = rotate(x, d)
-            r_loss = compute_loss(model, r_x)
+            r_loss = reconstruction_loss(model, r_x)
             total_loss = loss + r_loss
         gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
@@ -162,6 +170,6 @@ if __name__ == '__main__':
         shape=[num_examples_to_generate, 10])
     model = model.CVAE(latent_dim=10)
     date = '2_18'
-    file_path = 'method6'
+    file_path = 'method1'
     start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
