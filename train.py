@@ -66,11 +66,6 @@ def compute_loss(model, x, beta=4):
     x_logit = model.decode(z)
     d = random.randint(0, 360)
     r_x = rotate(x, -d)
-    r_mean, r_logvar = model.encoder(r_x)
-    r_z = model.reparameterize(r_mean, r_logvar)
-    r_x_logit = model.decoder(r_z)
-    r_cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=r_x_logit, label=r_x)
-    r_logx_z = -tf.reduce_sum(r_cross_ent, axis=[1,2,3])
     ori_loss = ori_cross_loss(model, r_x, z, d)
     rotate_loss = rota_cross_loss(model, x, z, d)
     '''
@@ -83,7 +78,7 @@ def compute_loss(model, x, beta=4):
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
 
-    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x) + rotate_loss + ori_loss + r_logx_z)
+    return -tf.reduce_mean(logpx_z + beta*(logpz - logqz_x) + rotate_loss + ori_loss)
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -109,7 +104,11 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     def train_step(model, x, optimizer):
         with tf.GradientTape() as tape:
             loss = compute_loss(model, x)
-        gradients = tape.gradient(loss, model.trainable_variables)
+            d = random.randint(0, 360)
+            r_x = rotate(x, d)
+            r_loss = compute_loss(model, r_x)
+            total_loss = loss + r_loss
+        gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
 
     checkpoint_path = "./checkpoints/"+ date + filePath
