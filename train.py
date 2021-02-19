@@ -50,12 +50,12 @@ def ori_cross_loss(model, x, d):
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, -s], [s, c]
     phi_z = rotate_vector(r_z, r_m)
     phi_x = model.decode(phi_z)
-    logx_z = cross_entropy(phi_x, x)
-    '''
+    #logx_z = cross_entropy(phi_x, x)
+
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=x)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     
-    '''
+
     return logx_z
 
 
@@ -70,11 +70,11 @@ def rota_cross_loss(model, x, d):
     z = model.reparameterize(mean, logvar)
     phi_z = rotate_vector(z, r_m)
     phi_x = model.decode(phi_z)
-    '''
+
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=r_x)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    '''
-    logx_z = cross_entropy(phi_x, r_x)
+
+    #logx_z = cross_entropy(phi_x, r_x)
     return logx_z
 
 
@@ -130,7 +130,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         with tf.GradientTape() as tape:
             ori_loss = ori_cross_loss(model, x, d)
             rota_loss = rota_cross_loss(model, x, d)
-            total_loss = ori_loss + rota_loss
+            total_loss = tf.reduced_mean(ori_loss + rota_loss)
         gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
     checkpoint_path = "./checkpoints/"+ date + filePath
@@ -187,6 +187,6 @@ if __name__ == '__main__':
     beta = 1
     model = model.CVAE(latent_dim=16, beta=beta)
     date = '2_18'
-    file_path = 'method3'
+    file_path = 'method4'
     start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
