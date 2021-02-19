@@ -50,8 +50,12 @@ def ori_cross_loss(model, x, d):
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, -s], [s, c]
     phi_z = rotate_vector(r_z, r_m)
     phi_x = model.decode(phi_z)
+    logx_z = cross_entropy(phi_x, x)
+    '''
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=x)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    
+    '''
     return logx_z
 
 
@@ -66,12 +70,16 @@ def rota_cross_loss(model, x, d):
     z = model.reparameterize(mean, logvar)
     phi_z = rotate_vector(z, r_m)
     phi_x = model.decode(phi_z)
+    '''
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=r_x)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    '''
+    logx_z = cross_entropy(phi_x, r_x)
     return logx_z
 
 
-def compute_loss(model, x, beta=4):
+def compute_loss(model, x):
+    beta = model.beta
     mean, logvar = model.encode(x)
     z = model.reparameterize(mean, logvar)
     x_logit = model.decode(z)
@@ -112,11 +120,13 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         d = random.randint(30, 90)
         with tf.GradientTape() as tape:
             ori_loss = compute_loss(model, x)
-            r_x = rotate(x, d)
-            rota_loss = compute_loss(model, r_x)
-            total_loss = ori_loss + rota_loss
-        gradients = tape.gradient(total_loss, model.trainable_variables)
+        gradients = tape.gradient(ori_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        with tf.GradientTape() as tape:
+            r_x = rotate(x, -d)
+            rota_loss = compute_loss(model, r_x)
+            gradients = tape.gradient(rota_loss, model.trainable_variables)
+            optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         with tf.GradientTape() as tape:
             ori_loss = ori_cross_loss(model, x, d)
             rota_loss = rota_cross_loss(model, x, d)
@@ -139,7 +149,6 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         for train_x in train_dataset:
             train_step(model, train_x, optimizer)
             end_time = time.time()
-
         loss = tf.keras.metrics.Mean()
         d = random.randint(30, 90)
         for test_x in test_dataset:
@@ -166,6 +175,7 @@ if __name__ == '__main__':
     train_size = 60000
     batch_size = 32
     test_size = 10000
+
     train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
                      .shuffle(train_size).batch(batch_size))
     test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
@@ -174,7 +184,8 @@ if __name__ == '__main__':
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
-    model = model.CVAE(latent_dim=10)
+    beta = 1
+    model = model.CVAE(latent_dim=16, beta=beta)
     date = '2_18'
     file_path = 'method2'
     start_train(epochs, model, train_dataset, test_dataset, date, file_path)
