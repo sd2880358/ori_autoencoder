@@ -184,9 +184,10 @@ if __name__ == '__main__':
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
-    beta = 5
-    model = model.CVAE(latent_dim=16, beta=beta)
-    date = '2_18'
-    file_path = 'method5'
-    start_train(epochs, model, train_dataset, test_dataset, date, file_path)
+    for i in range(1,6):
+        model = model.CVAE(latent_dim=16, beta=i)
+        date = '2_20'
+        str_i = str(i)
+        file_path = 'method' + i
+        start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
