@@ -92,7 +92,7 @@ def compute_loss(model, x):
     logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
-    return -tf.reduce_mean(logpx_z + logpz - beta * logqz_x)
+    return logpx_z + logpz - beta * logqz_x
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -120,19 +120,25 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         d = random.randint(30, 90)
         with tf.GradientTape() as tape:
             ori_loss = compute_loss(model, x)
-        gradients = tape.gradient(ori_loss, model.trainable_variables)
+            r_x = rotate(x, -d)
+            rota_loss = compute_loss(model, r_x)
+            ori_cross_l = ori_cross_loss(model, x, d)
+            rota_cross_l = rota_cross_loss(model, x, d)
+            total_loss = -tf.reduce_mean(ori_loss + rota_loss + ori_cross_l + rota_cross_l)
+        gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        '''
         with tf.GradientTape() as tape:
             r_x = rotate(x, -d)
             rota_loss = compute_loss(model, r_x)
-        gradients = tape.gradient(rota_loss, model.trainable_variables)
+        gradients = tape.gradient(rota_loss, model.trainable_variables)  
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+
         with tf.GradientTape() as tape:
-            ori_loss = ori_cross_loss(model, x, d)
-            rota_loss = rota_cross_loss(model, x, d)
-            total_loss = - tf.reduce_mean(ori_loss + rota_loss)
+
         gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
+        '''
     checkpoint_path = "./checkpoints/"+ date + filePath
     ckpt = tf.train.Checkpoint(model=model,
                                optimizer=optimizer)
@@ -186,7 +192,7 @@ if __name__ == '__main__':
         shape=[num_examples_to_generate, 10])
     for i in range(2,6):
         model = CVAE(latent_dim=16, beta=i)
-        date = '2_20'
+        date = '2_21'
         str_i = str(i)
         file_path = 'method' + str_i
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
