@@ -1,6 +1,6 @@
 from tensorflow.keras.datasets import fashion_mnist
 import tensorflow as tf
-import model
+from model import CVAE
 from dataset import preprocess_images
 from tensorflow_addons.image import rotate
 import random
@@ -184,8 +184,8 @@ if __name__ == '__main__':
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
-    for i in range(1,6):
-        model = model.CVAE(latent_dim=16, beta=i)
+    for i in range(2,6):
+        model = CVAE(latent_dim=16, beta=i)
         date = '2_20'
         str_i = str(i)
         file_path = 'method' + str_i
