@@ -21,7 +21,7 @@ def reconstruction_loss(model, X):
     X_pred = model.decode(Z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=X_pred, labels=X)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    return -tf.reduce_mean(logx_z)
+    return logx_z
 
 
 def log_normal_pdf(sample, mean, logvar, raxis=1):
@@ -30,8 +30,6 @@ def log_normal_pdf(sample, mean, logvar, raxis=1):
         -.5 * ((sample - mean) ** 2. * tf.exp(-logvar) + logvar + log2pi),
         axis=raxis)
 
-def kl_divergence(logvar, mean):
-    return -0.5 * tf.reduce_mean((1 + logvar - mean**2 - tf.exp(logvar)))
 
 def rotate_vector(vector, matrix):
     matrix = tf.cast(matrix, tf.float32)
@@ -78,7 +76,8 @@ def rota_cross_loss(model, x, d):
     return logx_z
 
 
-def compute_loss(model, x):
+
+def compute_loss(model, x, r_x):
     beta = model.beta
     mean, logvar = model.encode(x)
     z = model.reparameterize(mean, logvar)
@@ -88,11 +87,11 @@ def compute_loss(model, x):
     kl_loss = kl_divergence(logvar, mean)
     beta_loss = reco_loss + kl_loss * beta
     '''
-    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
-    logpx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    logpx_z = reconstruction_loss(model, r_x)
+    logp_rx_z = reconstruction_loss(model, r_x)
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
-    return logpx_z + logpz - beta * logqz_x
+    return logpx_z + logpz - beta * logqz_x + logp_rx_z
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -119,12 +118,11 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     def train_step(model, x, optimizer):
         d = random.randint(30, 90)
         with tf.GradientTape() as tape:
-            ori_loss = compute_loss(model, x)
             r_x = rotate(x, -d)
-            rota_loss = compute_loss(model, r_x)
+            ori_loss = compute_loss(model, x, r_x)
             ori_cross_l = ori_cross_loss(model, x, d)
             rota_cross_l = rota_cross_loss(model, x, d)
-            total_loss = -tf.reduce_mean(ori_loss + rota_loss + ori_cross_l + rota_cross_l)
+            total_loss = -tf.reduce_mean(ori_loss + ori_cross_l + rota_cross_l)
         gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         '''
@@ -133,9 +131,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             rota_loss = compute_loss(model, r_x)
         gradients = tape.gradient(rota_loss, model.trainable_variables)  
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
-
         with tf.GradientTape() as tape:
-
         gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         '''
@@ -158,10 +154,10 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         loss = tf.keras.metrics.Mean()
         d = random.randint(30, 90)
         for test_x in test_dataset:
-            rota_loss = -tf.reduce_mean(rota_cross_loss(model, test_x, d)
-                                        + ori_cross_loss(model, test_x, d))
-            loss([compute_loss(model, test_x),
-                 rota_loss])
+            total_loss = -tf.reduce_mean(rota_cross_loss(model, test_x, d)
+                                        + ori_cross_loss(model, test_x, d)
+                                        + compute_loss(model, test_x))
+            loss(total_loss)
         elbo = -loss.result()
         print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                 .format(epoch, elbo, end_time - start_time))
@@ -192,7 +188,7 @@ if __name__ == '__main__':
         shape=[num_examples_to_generate, 10])
     for i in range(2,6):
         model = CVAE(latent_dim=16, beta=i)
-        date = '2_21'
+        date = '2_21/'
         str_i = str(i)
         file_path = 'method' + str_i
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
