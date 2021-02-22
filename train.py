@@ -104,7 +104,7 @@ def generate_and_save_images(model, epoch, test_sample):
         plt.subplot(4, 4, i + 1)
         plt.imshow(predictions[i, :, :, 0], cmap='gray')
         plt.axis('off')
-    file_dir = './image/' + + date + file_path
+    file_dir = './image/' + date + file_path
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
     plt.savefig(file_dir +'/image_at_epoch_{:04d}.png'.format(epoch))
