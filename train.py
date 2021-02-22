@@ -77,7 +77,7 @@ def rota_cross_loss(model, x, d):
 
 
 
-def compute_loss(model, x, r_x):
+def compute_loss(model, x):
     beta = model.beta
     mean, logvar = model.encode(x)
     z = model.reparameterize(mean, logvar)
@@ -87,11 +87,11 @@ def compute_loss(model, x, r_x):
     kl_loss = kl_divergence(logvar, mean)
     beta_loss = reco_loss + kl_loss * beta
     '''
-    logpx_z = reconstruction_loss(model, r_x)
-    logp_rx_z = reconstruction_loss(model, r_x)
+    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
+    logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
-    return logpx_z + logpz - beta * logqz_x + logp_rx_z
+    return -tf.reduce_mean(logx_z + beta * (logpz -  logqz_x))
 
 
 def generate_and_save_images(model, epoch, test_sample):
@@ -104,7 +104,7 @@ def generate_and_save_images(model, epoch, test_sample):
         plt.subplot(4, 4, i + 1)
         plt.imshow(predictions[i, :, :, 0], cmap='gray')
         plt.axis('off')
-    file_dir = './image/' + file_path
+    file_dir = './image/' + + date + file_path
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
     plt.savefig(file_dir +'/image_at_epoch_{:04d}.png'.format(epoch))
@@ -119,10 +119,11 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         d = random.randint(30, 90)
         with tf.GradientTape() as tape:
             r_x = rotate(x, -d)
-            ori_loss = compute_loss(model, x, r_x)
-            ori_cross_l = ori_cross_loss(model, x, d)
-            rota_cross_l = rota_cross_loss(model, x, d)
-            total_loss = -tf.reduce_mean(ori_loss + ori_cross_l + rota_cross_l)
+            ori_loss = compute_loss(model, x)
+            rota_loss = compute_loss(model, r_x)
+            ori_cross_l = -tf.reduce_mean(ori_cross_loss(model, x, d))
+            rota_cross_l = -tf.reduce_mean(rota_cross_loss(model, x, d))
+            total_loss = ori_loss + rota_loss + ori_cross_l + rota_cross_l
         gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         '''
@@ -187,9 +188,9 @@ if __name__ == '__main__':
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
-    for i in range(2,6):
+    for i in range(1,6):
         model = CVAE(latent_dim=16, beta=i)
-        date = '2_21/'
+        date = '2_22/'
         str_i = str(i)
         file_path = 'method' + str_i
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
