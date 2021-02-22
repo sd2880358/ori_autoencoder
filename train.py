@@ -51,10 +51,10 @@ def ori_cross_loss(model, x, d):
     #logx_z = cross_entropy(phi_x, x)
 
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=x)
-    logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    logx_z = tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     
 
-    return logx_z
+    return tf.reduce_mean(logx_z)
 
 
 def rota_cross_loss(model, x, d):
@@ -70,10 +70,10 @@ def rota_cross_loss(model, x, d):
     phi_x = model.decode(phi_z)
 
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=r_x)
-    logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    logx_z = tf.reduce_sum(cross_ent, axis=[1, 2, 3])
 
     #logx_z = cross_entropy(phi_x, r_x)
-    return logx_z
+    return tf.reduce_mean(logx_z)
 
 
 
@@ -156,9 +156,10 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         d = random.randint(30, 90)
         for test_x in test_dataset:
             r_x = rotate(test_x, d)
-            total_loss = -tf.reduce_mean(rota_cross_loss(model, test_x, d)
-                                        + ori_cross_loss(model, test_x, d)
-                                        + compute_loss(model, test_x, r_x))
+            total_loss = rota_cross_loss(model, test_x, d) \
+                         + ori_cross_loss(model, test_x, d)\
+                         + compute_loss(model, test_x)  \
+                         + compute_loss(model, r_x)
             loss(total_loss)
         elbo = -loss.result()
         print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
