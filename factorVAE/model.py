@@ -35,6 +35,18 @@ class CVAE(tf.keras.Model):
                 filters=1, kernel_size=3, strides=1, padding='same'),
         ]
     )
+    self.discriminator = tf.keras.Sequential(
+        [
+            tf.keras.layers.InputLayer(input_shape=(latent_dim,)),
+            tf.keras.layers.Dense(1000, activation='relu'),
+            tf.keras.layers.Dense(1000, activation='relu'),
+            tf.keras.layers.Dense(1000, activation='relu'),
+            tf.keras.layers.Dense(1000, activation='relu'),
+            tf.keras.layers.Dense(1000, activation='relu'),
+            tf.keras.layers.Dense(2, activation='relu')
+        ]
+
+    )
 
   @tf.function
   def sample(self, eps=None):

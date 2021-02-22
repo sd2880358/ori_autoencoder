@@ -121,8 +121,8 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             r_x = rotate(x, -d)
             ori_loss = compute_loss(model, x)
             rota_loss = compute_loss(model, r_x)
-            ori_cross_l = -tf.reduce_mean(ori_cross_loss(model, x, d))
-            rota_cross_l = -tf.reduce_mean(rota_cross_loss(model, x, d))
+            ori_cross_l = ori_cross_loss(model, x, d)
+            rota_cross_l = rota_cross_loss(model, x, d)
             total_loss = ori_loss + rota_loss + ori_cross_l + rota_cross_l
         gradients = tape.gradient(total_loss, model.trainable_variables)
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
