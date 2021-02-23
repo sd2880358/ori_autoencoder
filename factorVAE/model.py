@@ -1,4 +1,5 @@
 import tensorflow as tf
+
 class CVAE(tf.keras.Model):
     def __init__(self, latent_dim, beta=4, gamma=1):
         super(CVAE, self).__init__()
@@ -52,11 +53,6 @@ class CVAE(tf.keras.Model):
         eps = tf.random.normal(shape=mean.shape)
         return eps * tf.exp(logvar * .5) + mean
 
-    def permuted(self, x):
-        permuted_rows = []
-        for i in range(x.shape[1]):
-            permuted_rows.append(tf.random.shuffle(x[:, i]))
-        return tf.cast(permuted_rows, dtype=tf.float32)
 
     def decode(self, z, apply_sigmoid=False):
         logits = self.decoder(z)
@@ -71,14 +67,19 @@ class Discriminator(tf.keras.Model):
         self.latent_dim = latent_dim
         self.beta = beta
         self.gamma = gamma
-
+        self.d1 = tf.keras.layers.Dense(1000, activation='relu')
+        self.d2 = tf.keras.layers.Dense(1000, activation='relu')
+        self.d3 = tf.keras.layers.Dense(1000, activation='relu')
+        self.d4 = tf.keras.layers.Dense(1000, activation='relu')
+        self.l = tf.keras.layers.Dense(2)
+        self.p = tf.keras.layers.Dense(2, activation='softmax')
     def call(self, inputs, trainning=True):
-        X = tf.keras.layers.Dense(1000, activation='relu')(inputs)
-        X = tf.keras.layers.Dense(1000, activation='relu')(X)
-        X = tf.keras.layers.Dense(1000, activation='relu')(X)
-        X = tf.keras.layers.Dense(1000, activation='relu')(X)
+        X = self.d1(inputs)
+        X = self.d2(X)
+        X = self.d3(X)
+        X = self.d4(X)
 
-        logits = tf.keras.layers.Dense(2)(X)
-        probability = tf.layers.Dense(1, activation='softmax')(logits)
+        logits = self.l(X)
+        probability = self.p(logits)
         return logits, probability
 

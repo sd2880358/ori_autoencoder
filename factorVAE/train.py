@@ -1,7 +1,6 @@
 from tensorflow.keras.datasets import fashion_mnist
 import tensorflow as tf
 from model import CVAE, Discriminator
-from beta_VAE.dataset import preprocess_images
 from tensorflow_addons.image import rotate
 import random
 import time
@@ -19,6 +18,10 @@ def discriminator_loss(real, permuted):
     real_sample_loss = tf.reduce_mean(tf.math.log(real[:, 0]))
     permuted_sample_loss = tf.reduce_mean(tf.math.log(permuted[:, 1]))
     return 0.5 * (real_sample_loss + permuted_sample_loss)
+
+def preprocess_images(images):
+  images = images.reshape((images.shape[0], 28, 28, 1)) / 255.
+  return np.where(images > .5, 1.0, 0.0).astype('float32')
 
 def reconstruction_loss(model, X):
     mean, logvar = model.encode(X)
@@ -61,6 +64,18 @@ def ori_cross_loss(model, x, d):
     return tf.reduce_mean(logx_z)
 
 
+def permuted(z):
+    permuted_rows = []
+    for i in range(z.shape[0]):
+        row = z.numpy()[i, :]
+        row = tf.random.shuffle(row)
+        permuted_rows.append(row)
+    return permuted_rows
+
+
+
+
+
 def rota_cross_loss(model, x, d):
     angle = np.radians(d)
     r_x = rotate(x, -d)
@@ -85,7 +100,7 @@ def compute_loss(x):
     beta = model.beta
     mean, logvar = model.encode(x)
     z = model.reparameterize(mean, logvar)
-    p_z = model.permuted(z)
+    p_z = z
     real_logit, real_pro = discriminator(z, trainning=True)
     fake_logit, fake_pro = discriminator(p_z, trainning=True)
     tc_regulariser = discriminator.gamma * tf.reduce_mean(real_logit[:, 0] - real_logit[:, 1], axis=0)
@@ -122,9 +137,9 @@ def generate_and_save_images(model, epoch, test_sample):
 
 def start_train(epochs, train_dataset, test_dataset, date, filePath):
     @tf.function
-    def train_step(x, optimizer):
+    def train_step(x):
         d = random.randint(30, 90)
-        with tf.GradientTape() as tape:
+        with tf.GradientTape(persistent=True) as tape:
             r_x = rotate(x, -d)
             ori_loss, ori_disc_loss = compute_loss(x)
             rota_loss, rota_disc_loss = compute_loss(r_x)
@@ -163,7 +178,7 @@ def start_train(epochs, train_dataset, test_dataset, date, filePath):
     for epoch in range(1, epochs + 1):
         start_time = time.time()
         for train_x in train_dataset:
-            train_step(train_x, vae_optimizer, )
+            train_step(train_x)
             end_time = time.time()
         loss = tf.keras.metrics.Mean()
         d = random.randint(30, 90)
