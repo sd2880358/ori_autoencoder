@@ -103,7 +103,7 @@ def compute_loss(x):
     p_z = z
     real_logit, real_pro = discriminator(z, trainning=True)
     fake_logit, fake_pro = discriminator(p_z, trainning=True)
-    tc_regulariser = discriminator.gamma * tf.reduce_mean(real_logit[0, :] - real_logit[1, :])
+    tc_regulariser = discriminator.gamma * tf.reduce_mean(real_logit[0, :] - real_logit[1, :], axis=[0])
     x_logit = model.decode(z)
     '''
     reco_loss = reconstruction_loss(x_logit, x)
