@@ -80,7 +80,6 @@ def rota_cross_loss(model, x, d):
     return -tf.reduce_mean(logx_z + beta * (logpz - logqz_x))
 
     #logx_z = cross_entropy(phi_x, r_x)
-    return tf.reduce_mean(logx_z)
 
 
 
