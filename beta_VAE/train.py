@@ -48,15 +48,12 @@ def ori_cross_loss(model, x, d):
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, -s], [s, c]
     phi_z = rotate_vector(r_z, r_m)
     phi_x = model.decode(phi_z)
-    beta = model.beta
 
 
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=x)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    logpz = log_normal_pdf(phi_z, 0., 0.)
-    logqz_x = log_normal_pdf(phi_z, mean, logvar)
 
-    return -tf.reduce_mean(logx_z + beta * (logpz - logqz_x))
+    return -tf.reduce_mean(logx_z)
 
 
 def rota_cross_loss(model, x, d):
@@ -74,10 +71,8 @@ def rota_cross_loss(model, x, d):
 
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=r_x)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    logpz = log_normal_pdf(phi_z, 0., 0.)
-    logqz_x = log_normal_pdf(phi_z, mean, logvar)
 
-    return -tf.reduce_mean(logx_z + beta * (logpz - logqz_x))
+    return -tf.reduce_mean(logx_z)
 
     #logx_z = cross_entropy(phi_x, r_x)
 
