@@ -114,9 +114,10 @@ def compute_loss(x):
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
-    vae_loss = -tf.reduce_mean(logx_z + beta * (logpz - logqz_x)) + tc_regulariser
+    vae_loss = -tf.reduce_mean(logx_z + beta * (logpz - logqz_x))
+    vae_total_loss = vae_loss + tc_regulariser
     disc_loss = discriminator_loss(real_pro, fake_pro)
-    return vae_loss, disc_loss
+    return vae_total_loss, disc_loss
 
 def generate_and_save_images(model, epoch, test_sample):
     mean, logvar = model.encode(test_sample)
@@ -143,7 +144,6 @@ def start_train(epochs, train_dataset, test_dataset, date, filePath):
             r_x = rotate(x, -d)
             ori_loss, ori_disc_loss = compute_loss(x)
             rota_loss, rota_disc_loss = compute_loss(r_x)
-            print(ori_loss)
             ori_cross_l = ori_cross_loss(model, x, d)
             rota_cross_l = rota_cross_loss(model, x, d)
             total_loss = ori_loss + rota_loss + ori_cross_l + rota_cross_l
