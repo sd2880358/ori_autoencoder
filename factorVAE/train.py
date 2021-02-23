@@ -15,8 +15,8 @@ mbs = tf.losses.MeanAbsoluteError()
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 def discriminator_loss(real, permuted):
-    real_sample_loss = tf.reduce_mean(tf.math.log(real[:, 0]))
-    permuted_sample_loss = tf.reduce_mean(tf.math.log(permuted[:, 1]))
+    real_sample_loss = tf.reduce_mean(tf.math.log(real[0, :]))
+    permuted_sample_loss = tf.reduce_mean(tf.math.log(permuted[1, :]))
     return 0.5 * (real_sample_loss + permuted_sample_loss)
 
 def preprocess_images(images):
@@ -103,7 +103,7 @@ def compute_loss(x):
     p_z = z
     real_logit, real_pro = discriminator(z, trainning=True)
     fake_logit, fake_pro = discriminator(p_z, trainning=True)
-    tc_regulariser = discriminator.gamma * tf.reduce_mean(real_logit[:, 0] - real_logit[:, 1])
+    tc_regulariser = discriminator.gamma * tf.reduce_mean(real_logit[0, :] - real_logit[1, :])
     x_logit = model.decode(z)
     '''
     reco_loss = reconstruction_loss(x_logit, x)
@@ -114,7 +114,7 @@ def compute_loss(x):
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
-    vae_loss = -tf.reduce_mean(logx_z + beta * (logpz - logqz_x))
+    vae_loss = -tf.reduce_mean(logx_z + beta * (logpz - logqz_x)) + tc_regulariser
     disc_loss = discriminator_loss(real_pro, fake_pro)
     return vae_loss, disc_loss
 
