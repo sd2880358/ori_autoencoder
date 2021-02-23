@@ -1,6 +1,6 @@
 from tensorflow.keras.datasets import fashion_mnist
 import tensorflow as tf
-from .model import CVAE, Discriminator
+from model import CVAE, Discriminator
 from beta_VAE.dataset import preprocess_images
 from tensorflow_addons.image import rotate
 import random
