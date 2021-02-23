@@ -114,7 +114,7 @@ def compute_loss(x):
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
     logqz_x = log_normal_pdf(z, mean, logvar)
-    vae_loss = -tf.reduce_mean(logx_z + beta * (logpz - logqz_x)) + tc_regulariser
+    vae_loss = -tf.reduce_mean(logx_z + beta * (logpz - logqz_x))
     disc_loss = discriminator_loss(real_pro, fake_pro)
     return vae_loss, disc_loss
 
