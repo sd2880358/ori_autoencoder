@@ -104,7 +104,6 @@ def compute_loss(x):
     real_logit, real_pro = discriminator(z, trainning=True)
     fake_logit, fake_pro = discriminator(p_z, trainning=True)
     tc_regulariser = discriminator.gamma * tf.reduce_mean(real_logit[0, :] - real_logit[1, :])
-    print(tc_regulariser)
     x_logit = model.decode(z)
     '''
     reco_loss = reconstruction_loss(x_logit, x)
@@ -144,6 +143,7 @@ def start_train(epochs, train_dataset, test_dataset, date, filePath):
             r_x = rotate(x, -d)
             ori_loss, ori_disc_loss = compute_loss(x)
             rota_loss, rota_disc_loss = compute_loss(r_x)
+            print(ori_loss)
             ori_cross_l = ori_cross_loss(model, x, d)
             rota_cross_l = rota_cross_loss(model, x, d)
             total_loss = ori_loss + rota_loss + ori_cross_l + rota_cross_l
