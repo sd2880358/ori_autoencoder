@@ -188,9 +188,6 @@ def start_train(epochs, train_dataset, test_dataset, date, filePath):
                          + ori_cross_loss(model, test_x, d) \
                          + compute_loss(test_x) \
                          + compute_loss(r_x)
-            print(rota_cross_loss)
-            print()
-            loss(total_loss)
         elbo = -loss.result()
         print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
               .format(epoch, elbo, end_time - start_time))
