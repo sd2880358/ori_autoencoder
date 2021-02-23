@@ -103,7 +103,7 @@ def compute_loss(x):
     p_z = z
     real_logit, real_pro = discriminator(z, trainning=True)
     fake_logit, fake_pro = discriminator(p_z, trainning=True)
-    tc_regulariser = discriminator.gamma * tf.reduce_mean(real_logit[:, 0] - real_logit[:, 1], axis=0)
+    tc_regulariser = discriminator.gamma * tf.reduce_mean(real_logit[:, 0] - real_logit[:, 1])
     x_logit = model.decode(z)
     '''
     reco_loss = reconstruction_loss(x_logit, x)
@@ -188,6 +188,8 @@ def start_train(epochs, train_dataset, test_dataset, date, filePath):
                          + ori_cross_loss(model, test_x, d) \
                          + compute_loss(test_x) \
                          + compute_loss(r_x)
+            print(rota_cross_loss)
+            print()
             loss(total_loss)
         elbo = -loss.result()
         print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
