@@ -197,7 +197,7 @@ if __name__ == '__main__':
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
     for i in range(3,4):
-        model = CVAE(latent_dim=32, beta=i)
+        model = CVAE(latent_dim=8, beta=i)
         date = '2_23/'
         str_i = str(i)
         file_path = 'method2'
