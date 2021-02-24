@@ -72,7 +72,7 @@ class Discriminator(tf.keras.Model):
         self.d3 = tf.keras.layers.Dense(1000, activation='relu')
         self.d4 = tf.keras.layers.Dense(1000, activation='relu')
         self.l = tf.keras.layers.Dense(2)
-        self.p = tf.keras.layers.Dense(2, activation='softmax')
+        self.p = tf.keras.layers.Dense(1, activation='softmax')
     def call(self, inputs, trainning=True):
         X = self.d1(inputs)
         X = self.d2(X)

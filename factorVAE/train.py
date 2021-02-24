@@ -9,14 +9,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from IPython import display
-
+from itertools import product
 
 mbs = tf.losses.MeanAbsoluteError()
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 def discriminator_loss(real, permuted):
-    real_sample_loss = tf.reduce_mean(tf.math.log(real[0, :]))
-    permuted_sample_loss = tf.reduce_mean(tf.math.log(permuted[1, :]))
+    real_sample_loss = cross_entropy(tf.ones_like(real), real)
+    permuted_sample_loss = cross_entropy(tf.zeros_like(permuted), permuted)
     return 0.5 * (real_sample_loss + permuted_sample_loss)
 
 def preprocess_images(images):
@@ -67,10 +67,12 @@ def ori_cross_loss(model, x, d):
 def permuted(z):
     permuted_rows = []
     for i in range(z.shape[0]):
-        row = z.numpy()[i, :]
-        row = tf.random.shuffle(row)
+        tmp = z[i, :]
+        row = tf.random.shuffle(tmp)
         permuted_rows.append(row)
-    return permuted_rows
+    test = tf.stack(permuted_rows)
+    print(test)
+    return test
 
 
 
@@ -100,22 +102,25 @@ def compute_loss(x):
     beta = model.beta
     mean, logvar = model.encode(x)
     z = model.reparameterize(mean, logvar)
-    p_z = z
+    p_z = permuted(z)
+    gamma = discriminator.gamma
     real_logit, real_pro = discriminator(z, trainning=True)
     fake_logit, fake_pro = discriminator(p_z, trainning=True)
-    tc_regulariser = discriminator.gamma * - tf.reduce_mean(real_logit[0, :] - real_logit[1, :], axis=[0])
+    tc_regulariser = tf.reduce_mean(real_logit[:, 0] - real_logit[:, 1], axis=0)
     x_logit = model.decode(z)
     '''
     reco_loss = reconstruction_loss(x_logit, x)
     kl_loss = kl_divergence(logvar, mean)
     beta_loss = reco_loss + kl_loss * beta
     '''
+    print(tc_regulariser)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
+
     logqz_x = log_normal_pdf(z, mean, logvar)
     vae_loss = -tf.reduce_mean(logx_z + beta * (logpz - logqz_x))
-    vae_total_loss = vae_loss + tc_regulariser
+    vae_total_loss = vae_loss
     disc_loss = discriminator_loss(real_pro, fake_pro)
     return vae_total_loss, disc_loss
 
