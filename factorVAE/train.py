@@ -213,7 +213,7 @@ if __name__ == '__main__':
     test_size = 10000
     vae_optimizer = tf.keras.optimizers.Adam(1e-4)
     disc_optimizer = tf.keras.optimizers.Adam(1e-4)
-    latent_dim = 2
+    latent_dim = 8
     train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
                      .shuffle(train_size).batch(batch_size))
     test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
@@ -224,8 +224,8 @@ if __name__ == '__main__':
         shape=[num_examples_to_generate, 10])
     for i in range(3, 4):
         model = CVAE(latent_dim=latent_dim, beta=i)
-        discriminator = Discriminator(latent_dim=latent_dim, beta=i)
-        date = '2_24/'
+        discriminator = Discriminator(latent_dim=latent_dim, beta=1, gamma=7)
+        date = '2_25/'
         str_i = str(i)
         file_path = 'method1'
         start_train(epochs, train_dataset, test_dataset, date, file_path)
