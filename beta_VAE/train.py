@@ -195,6 +195,6 @@ if __name__ == '__main__':
         model = CVAE(latent_dim=latent_dim, beta=i)
         date = '2_24/'
         str_i = str(i)
-        file_path = 'method1'
+        file_path = 'method2'
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
