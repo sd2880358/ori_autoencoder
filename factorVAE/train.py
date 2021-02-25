@@ -227,6 +227,6 @@ if __name__ == '__main__':
         discriminator = Discriminator(latent_dim=latent_dim, beta=i)
         date = '2_24/'
         str_i = str(i)
-        file_path = 'method' + str_i
+        file_path = 'method1'
         start_train(epochs, train_dataset, test_dataset, date, file_path)
 
