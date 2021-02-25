@@ -29,7 +29,7 @@ def reconstruction_loss(model, X):
     Z = model.reparameterize(mean, logvar)
     X_pred = model.decode(Z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=X_pred, labels=X)
-    logx_z =tf.compat.v1.enable_eager_execution()  -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     return logx_z
 
 
@@ -222,11 +222,11 @@ if __name__ == '__main__':
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
-    for i in range(3, 4):
+    for i in range(6, 10):
         model = CVAE(latent_dim=latent_dim, beta=i)
-        discriminator = Discriminator(latent_dim=latent_dim, beta=1, gamma=7)
+        discriminator = Discriminator(latent_dim=latent_dim, beta=1, gamma=i)
         date = '2_25/'
         str_i = str(i)
-        file_path = 'method1'
+        file_path = 'gamma' + str_i
         start_train(epochs, train_dataset, test_dataset, date, file_path)
 
