@@ -11,6 +11,7 @@ import os
 from IPython import display
 from itertools import product
 
+
 mbs = tf.losses.MeanAbsoluteError()
 cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
@@ -28,7 +29,7 @@ def reconstruction_loss(model, X):
     Z = model.reparameterize(mean, logvar)
     X_pred = model.decode(Z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=X_pred, labels=X)
-    logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
+    logx_z =tf.compat.v1.enable_eager_execution()  -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     return logx_z
 
 
@@ -65,17 +66,17 @@ def ori_cross_loss(model, x, d):
 
 
 def permuted(z):
-    permuted_rows = []
-    for i in range(z.shape[0]):
-        tmp = z[i, :]
-        row = tf.random.shuffle(tmp)
-        permuted_rows.append(row)
-    test = tf.stack(permuted_rows)
-    print(test)
-    return test
-
-
-
+    z_shape = z.shape
+#     indices = list(range(z_shape[1])) * z_shape[0]
+#     swap_index_pair = np.random.randint(0, latent_dim, size=(z_shape[0], 2), dtype=np.int32)
+    indices = list(range(z_shape[1]))
+    swap_index = np.random.choice(indices, size=z_shape[1], replace=False)
+    nd_indices = [
+            [i, j] for i, j in product(range(z_shape[0]), swap_index)
+        ]
+        
+    z_shuffled = tf.reshape(tf.gather_nd(z, tf.convert_to_tensor(nd_indices)), z_shape)
+    return z_shuffled
 
 
 def rota_cross_loss(model, x, d):
@@ -113,14 +114,12 @@ def compute_loss(x):
     kl_loss = kl_divergence(logvar, mean)
     beta_loss = reco_loss + kl_loss * beta
     '''
-    print(tc_regulariser)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x_logit, labels=x)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
     logpz = log_normal_pdf(z, 0., 0.)
-
     logqz_x = log_normal_pdf(z, mean, logvar)
     vae_loss = -tf.reduce_mean(logx_z + beta * (logpz - logqz_x))
-    vae_total_loss = vae_loss
+    vae_total_loss = vae_loss + tc_regulariser * gamma
     disc_loss = discriminator_loss(real_pro, fake_pro)
     return vae_total_loss, disc_loss
 
@@ -191,7 +190,9 @@ def start_train(epochs, train_dataset, test_dataset, date, filePath):
         for test_x in test_dataset:
             r_x = rotate(test_x, d)
             total_loss = rota_cross_loss(model, test_x, d) \
-                         + ori_cross_loss(model, test_x, d)
+                         + ori_cross_loss(model, test_x, d) \
+                         + compute_loss(test_x) \
+                         + compute_loss(r_x)
             loss(total_loss)
         elbo = -loss.result()
         print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
@@ -212,7 +213,7 @@ if __name__ == '__main__':
     test_size = 10000
     vae_optimizer = tf.keras.optimizers.Adam(1e-4)
     disc_optimizer = tf.keras.optimizers.Adam(1e-4)
-
+    latent_dim = 4
     train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
                      .shuffle(train_size).batch(batch_size))
     test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
@@ -222,8 +223,8 @@ if __name__ == '__main__':
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
     for i in range(1, 6):
-        model = CVAE(latent_dim=16, beta=i)
-        discriminator = Discriminator(latent_dim=16, beta=i)
+        model = CVAE(latent_dim=latent_dim, beta=i)
+        discriminator = Discriminator(latent_dim=latent_dim, beta=i)
         date = '2_22/'
         str_i = str(i)
         file_path = 'method' + str_i

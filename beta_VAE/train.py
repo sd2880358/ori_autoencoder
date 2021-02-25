@@ -175,12 +175,12 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
 
 
 if __name__ == '__main__':
-    (train_images, _), (test_images, _) = tf.keras.datasets.mnist.load_data()
+    (test_images, _), (train_images, _) = tf.keras.datasets.mnist.load_data()
     train_images = preprocess_images(train_images)
     test_images = preprocess_images(test_images)
-    train_size = 60000
+    train_size = 10000
     batch_size = 32
-    test_size = 10000
+    test_size = 60000
 
     train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
                      .shuffle(train_size).batch(batch_size))
@@ -192,8 +192,8 @@ if __name__ == '__main__':
         shape=[num_examples_to_generate, 10])
     for i in range(3,4):
         model = CVAE(latent_dim=4, beta=i)
-        date = '2_23/'
+        date = '2_24/'
         str_i = str(i)
-        file_path = 'method2'
+        file_path = 'method1'
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
