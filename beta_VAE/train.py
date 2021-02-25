@@ -187,11 +187,12 @@ if __name__ == '__main__':
     test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                     .shuffle(test_size).batch(batch_size))
     epochs = 100
+    latent_dim = 2
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
     for i in range(3,4):
-        model = CVAE(latent_dim=4, beta=i)
+        model = CVAE(latent_dim=latent_dim, beta=i)
         date = '2_24/'
         str_i = str(i)
         file_path = 'method1'
