@@ -120,7 +120,7 @@ def compute_loss(x):
     logqz_x = log_normal_pdf(z, mean, logvar)
     vae_loss = -tf.reduce_mean(logx_z + beta * (logpz - logqz_x))
     vae_total_loss = vae_loss + tc_regulariser * gamma
-    disc_loss = discriminator_loss(real_pro, fake_pro)
+    disc_loss = discriminator_loss(real_pro[:, 0], fake_pro[:, 0])
     return vae_total_loss, disc_loss
 
 def generate_and_save_images(model, epoch, test_sample):
