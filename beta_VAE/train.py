@@ -21,7 +21,7 @@ def reconstruction_loss(model, X):
     X_pred = model.decode(Z)
     cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=X_pred, labels=X)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
-    return logx_z
+    return -tf.reduce_mean(logx_z)
 
 
 def log_normal_pdf(sample, mean, logvar, raxis=1):
@@ -121,7 +121,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         with tf.GradientTape() as tape:
             r_x = rotate(x, -d)
             ori_loss = compute_loss(model, x)
-            rota_loss = compute_loss(model, r_x)
+            rota_loss = reconstruction_loss(model, r_x)
             ori_cross_l = ori_cross_loss(model, x, d)
             rota_cross_l = rota_cross_loss(model, x, d)
             total_loss = ori_loss + rota_loss + ori_cross_l + rota_cross_l
@@ -193,7 +193,7 @@ if __name__ == '__main__':
         shape=[num_examples_to_generate, 10])
     for i in range(3,4):
         model = CVAE(latent_dim=latent_dim, beta=i)
-        date = '2_24/'
+        date = '2_27/'
         str_i = str(i)
         file_path = 'method2'
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
