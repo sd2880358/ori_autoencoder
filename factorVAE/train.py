@@ -225,7 +225,7 @@ if __name__ == '__main__':
     for i in range(6, 10):
         model = CVAE(latent_dim=latent_dim, beta=1)
         discriminator = Discriminator(latent_dim=latent_dim, gamma=i)
-        date = '2_25/'
+        date = '2_27/'
         str_i = str(i)
         file_path = 'gamma' + str_i
         start_train(epochs, train_dataset, test_dataset, date, file_path)
