@@ -160,7 +160,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             total_loss = rota_cross_loss(model, test_x, d) \
                          + ori_cross_loss(model, test_x, d)\
                          + compute_loss(model, test_x)  \
-                         + compute_loss(model, r_x)
+                         + reconstruction_loss(model, r_x)
             loss(total_loss)
         elbo = -loss.result()
         print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
@@ -175,12 +175,13 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
 
 
 if __name__ == '__main__':
-    (test_images, _), (train_images, _) = tf.keras.datasets.mnist.load_data()
-    train_images = preprocess_images(train_images)
-    test_images = preprocess_images(test_images)
-    train_size = 10000
+    (data_set, _), (_, _) = tf.keras.datasets.mnist.load_data()
+    data_images = preprocess_images(data_set)
+    train_size = 50000
     batch_size = 32
-    test_size = 60000
+    test_size = data_images.shape[0] - train_size
+    train_images = data_images[:train_size]
+    test_images = data_images[train_size:]
 
     train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
                      .shuffle(train_size).batch(batch_size))

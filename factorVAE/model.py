@@ -1,11 +1,10 @@
 import tensorflow as tf
 
 class CVAE(tf.keras.Model):
-    def __init__(self, latent_dim, beta=4, gamma=1):
+    def __init__(self, latent_dim, beta=4,):
         super(CVAE, self).__init__()
         self.latent_dim = latent_dim
         self.beta = beta
-        self.gamma = gamma
         self.encoder = tf.keras.Sequential(
             [
                 tf.keras.layers.InputLayer(input_shape=(28, 28, 1)),
@@ -62,10 +61,9 @@ class CVAE(tf.keras.Model):
         return logits
 
 class Discriminator(tf.keras.Model):
-    def __init__(self, latent_dim, beta=4, gamma=1):
+    def __init__(self, latent_dim, gamma=1):
         super(Discriminator, self).__init__()
         self.latent_dim = latent_dim
-        self.beta = beta
         self.gamma = gamma
         self.d1 = tf.keras.layers.Dense(1000, activation='relu')
         self.d2 = tf.keras.layers.Dense(1000, activation='relu')

@@ -223,8 +223,8 @@ if __name__ == '__main__':
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
     for i in range(6, 10):
-        model = CVAE(latent_dim=latent_dim, beta=i)
-        discriminator = Discriminator(latent_dim=latent_dim, beta=1, gamma=i)
+        model = CVAE(latent_dim=latent_dim, beta=1)
+        discriminator = Discriminator(latent_dim=latent_dim, gamma=i)
         date = '2_25/'
         str_i = str(i)
         file_path = 'gamma' + str_i
