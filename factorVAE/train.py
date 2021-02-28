@@ -47,11 +47,10 @@ def rotate_vector(vector, matrix):
 
 
 def ori_cross_loss(model, x, d):
-    r_x = rotate(x, -d)
+    r_x = rotate(x, d)
     mean, logvar = model.encode(r_x)
     r_z = model.reparameterize(mean, logvar)
-    angle = np.radians(d)
-    c, s = np.cos(angle), np.sin(angle)
+    c, s = np.cos(d), np.sin(d)
     latent = model.latent_dim
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, -s], [s, c]
@@ -80,9 +79,8 @@ def permuted(z):
 
 
 def rota_cross_loss(model, x, d):
-    angle = np.radians(d)
-    r_x = rotate(x, -d)
-    c, s = np.cos(angle), np.sin(angle)
+    r_x = rotate(x, d)
+    c, s = np.cos(d), np.sin(d)
     latent = model.latent_dim
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
@@ -128,7 +126,6 @@ def generate_and_save_images(model, epoch, test_sample):
     z = model.reparameterize(mean, logvar)
     predictions = model.sample(z)
     fig = plt.figure(figsize=(4, 4))
-
     for i in range(predictions.shape[0]):
         plt.subplot(4, 4, i + 1)
         plt.imshow(predictions[i, :, :, 0], cmap='gray')
@@ -143,9 +140,9 @@ def generate_and_save_images(model, epoch, test_sample):
 def start_train(epochs, train_dataset, test_dataset, date, filePath):
     @tf.function
     def train_step(x):
-        d = random.randint(30, 90)
+        d = np.radians(random.randint(30, 90))
         with tf.GradientTape(persistent=True) as tape:
-            r_x = rotate(x, -d)
+            r_x = rotate(x, d)
             ori_loss, ori_disc_loss = compute_loss(x)
             rota_loss, rota_disc_loss = compute_loss(r_x)
             ori_cross_l = ori_cross_loss(model, x, d)
@@ -158,7 +155,7 @@ def start_train(epochs, train_dataset, test_dataset, date, filePath):
         disc_optimizer.apply_gradients(zip(disc_gradients, discriminator.trainable_variables))
         '''
         with tf.GradientTape() as tape:
-            r_x = rotate(x, -d)
+            r_x = rotate(x, d)
             rota_loss = compute_loss(model, r_x)
         gradients = tape.gradient(rota_loss, model.trainable_variables)  
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))

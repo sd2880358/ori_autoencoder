@@ -38,11 +38,10 @@ def rotate_vector(vector, matrix):
 
 
 def ori_cross_loss(model, x, d):
-    r_x = rotate(x, -d)
+    r_x = rotate(x, d)
     mean, logvar = model.encode(r_x)
     r_z = model.reparameterize(mean, logvar)
-    angle = np.radians(d)
-    c, s = np.cos(angle), np.sin(angle)
+    c, s = np.cos(d), np.sin(d)
     latent = model.latent_dim
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, -s], [s, c]
@@ -57,10 +56,8 @@ def ori_cross_loss(model, x, d):
 
 
 def rota_cross_loss(model, x, d):
-    beta = model.beta
-    angle = np.radians(d)
-    r_x = rotate(x, -d)
-    c, s = np.cos(angle), np.sin(angle)
+    r_x = rotate(x, d)
+    c, s = np.cos(d), np.sin(d)
     latent = model.latent_dim
     r_m = np.identity(latent)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
@@ -117,9 +114,9 @@ def generate_and_save_images(model, epoch, test_sample):
 def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     @tf.function
     def train_step(model, x, optimizer):
-        d = random.randint(30, 90)
+        d = np.radians(random.randint(30, 90))
         with tf.GradientTape() as tape:
-            r_x = rotate(x, -d)
+            r_x = rotate(x, d)
             ori_loss = compute_loss(model, x)
             rota_loss = reconstruction_loss(model, r_x)
             ori_cross_l = ori_cross_loss(model, x, d)
@@ -129,7 +126,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
         '''
         with tf.GradientTape() as tape:
-            r_x = rotate(x, -d)
+            r_x = rotate(x, d)
             rota_loss = compute_loss(model, r_x)
         gradients = tape.gradient(rota_loss, model.trainable_variables)  
         optimizer.apply_gradients(zip(gradients, model.trainable_variables))
@@ -154,7 +151,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             train_step(model, train_x, optimizer)
             end_time = time.time()
         loss = tf.keras.metrics.Mean()
-        d = random.randint(30, 90)
+        d = np.radians(random.randint(30, 90))
         for test_x in test_dataset:
             r_x = rotate(test_x, d)
             total_loss = rota_cross_loss(model, test_x, d) \
@@ -188,7 +185,7 @@ if __name__ == '__main__':
     test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                     .shuffle(test_size).batch(batch_size))
     epochs = 100
-    latent_dim = 2
+    latent_dim = 16
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
@@ -196,6 +193,6 @@ if __name__ == '__main__':
         model = CVAE(latent_dim=latent_dim, beta=i)
         date = '2_27/'
         str_i = str(i)
-        file_path = 'method2'
+        file_path = 'method1'
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
