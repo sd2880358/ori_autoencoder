@@ -146,6 +146,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         test_sample = test_batch[0:num_examples_to_generate, :, :, :]
         r_sample = rotate(test_sample, degree)
     generate_and_save_images(model, 0, test_sample, file_path)
+    generate_and_save_images(model, 0, r_sample, "rotate_image")
     display.clear_output(wait=False)
     for epoch in range(1, epochs + 1):
         start_time = time.time()
@@ -165,7 +166,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                 .format(epoch, elbo, end_time - start_time))
         generate_and_save_images(model, epoch, test_sample, file_path)
-        generate_and_save_images(model, epochs, r_sample, "rotate_image")
+        generate_and_save_images(model, epoch, r_sample, "rotate_image")
         if (epoch + 1) % 10 == 0:
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
