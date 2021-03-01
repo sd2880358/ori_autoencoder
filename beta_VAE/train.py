@@ -185,13 +185,13 @@ if __name__ == '__main__':
     test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                     .shuffle(test_size).batch(batch_size))
     epochs = 100
-    latent_dim = 16
+    latent_dim = 8
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
-    for i in range(1,5):
-        model = CVAE(latent_dim=latent_dim, beta=3)
-        train_size = i * 1000
+    for i in range(1,2):
+        model = CVAE(latent_dim=latent_dim, beta=1)
+        train_size = 50000
         batch_size = 32
         test_size = data_images.shape[0] - train_size
         train_images = data_images[:train_size]
@@ -203,6 +203,6 @@ if __name__ == '__main__':
                         .shuffle(test_size).batch(batch_size))
         date = '2_28/'
         str_i = str(i)
-        file_path = 'sample_size' + str_i
+        file_path = 'normal'
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
