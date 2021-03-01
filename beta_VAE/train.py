@@ -49,7 +49,7 @@ def ori_cross_loss(model, x, d):
     phi_x = model.decode(phi_z)
 
 
-    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=x, labels=phi_x)
+    cross_ent = tf.nn.sigmoid_cross_entropy_with_logits(logits=phi_x, labels=x)
     logx_z = -tf.reduce_sum(cross_ent, axis=[1, 2, 3])
 
     return -tf.reduce_mean(logx_z)
