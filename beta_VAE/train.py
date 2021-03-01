@@ -144,7 +144,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     degree = np.radians(random.randint(30, 90))
     for test_batch in test_dataset.take(1):
         test_sample = test_batch[0:num_examples_to_generate, :, :, :]
-        r_sample = rotate(degree)
+        r_sample = rotate(test_sample, degree)
     generate_and_save_images(model, 0, test_sample, file_path)
     display.clear_output(wait=False)
     for epoch in range(1, epochs + 1):
