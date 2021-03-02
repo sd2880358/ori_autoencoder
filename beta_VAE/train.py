@@ -113,8 +113,7 @@ def generate_and_save_images(model, epoch, test_sample, file_path):
 
 def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     @tf.function
-    def train_step(model, x, optimizer):
-        d = np.radians(random.randint(30, 90))
+    def train_step(model, x, optimizer, d):
         with tf.GradientTape() as tape:
             r_x = rotate(x, d)
             ori_loss = compute_loss(model, x)
@@ -149,28 +148,29 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     generate_and_save_images(model, 0, r_sample, "rotate_image")
     display.clear_output(wait=False)
     for epoch in range(1, epochs + 1):
-        start_time = time.time()
-        for train_x in train_dataset:
-            train_step(model, train_x, optimizer)
-            end_time = time.time()
-        loss = tf.keras.metrics.Mean()
-        d = np.radians(random.randint(30, 90))
-        for test_x in test_dataset:
-            r_x = rotate(test_x, d)
-            total_loss = rota_cross_loss(model, test_x, d) \
-                         + ori_cross_loss(model, test_x, d)\
-                         + compute_loss(model, test_x)  \
-                         + reconstruction_loss(model, r_x)
-            loss(total_loss)
-        elbo = -loss.result()
-        print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
-                .format(epoch, elbo, end_time - start_time))
-        generate_and_save_images(model, epoch, test_sample, file_path)
-        generate_and_save_images(model, epoch, r_sample, "rotate_image")
-        if (epoch + 1) % 10 == 0:
-            ckpt_save_path = ckpt_manager.save()
-            print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
-                                                        ckpt_save_path))
+        for degree in range(30, 100, 10):
+            d = np.radians(degree)
+            start_time = time.time()
+            for train_x in train_dataset:
+                train_step(model, train_x, optimizer, d)
+                end_time = time.time()
+            loss = tf.keras.metrics.Mean()
+            for test_x in test_dataset:
+                r_x = rotate(test_x, d)
+                total_loss = rota_cross_loss(model, test_x, d) \
+                            + ori_cross_loss(model, test_x, d)\
+                            + compute_loss(model, test_x)  \
+                            + reconstruction_loss(model, r_x)
+                loss(total_loss)
+            elbo = -loss.result()
+            print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
+                    .format(epoch, elbo, end_time - start_time))
+            generate_and_save_images(model, epoch, test_sample, file_path)
+            generate_and_save_images(model, epoch, r_sample, "rotate_image")
+            if (epoch + 1) % 10 == 0:
+                ckpt_save_path = ckpt_manager.save()
+                print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
+                                                            ckpt_save_path))
 
 
 
@@ -205,7 +205,7 @@ if __name__ == '__main__':
                          .shuffle(train_size).batch(batch_size))
         test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                         .shuffle(test_size).batch(batch_size))
-        date = '3_1/'
+        date = '3_2/'
         str_i = str(i)
         file_path = 'new_test'
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
