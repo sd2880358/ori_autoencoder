@@ -153,25 +153,25 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         start_time = time.time()
         for train_x in train_dataset:
             train_step(model, train_x, optimizer)
-            end_time = time.time()
+        end_time = time.time()
         loss = tf.keras.metrics.Mean()
-        d = np.radians(random.randint(30, 90))
-        for test_x in test_dataset:
-            r_x = rotate(test_x, d)
-            total_loss = rota_cross_loss(model, test_x, d) \
-                         + ori_cross_loss(model, test_x, d)\
-                         + compute_loss(model, test_x)  \
-                         + reconstruction_loss(model, r_x)
-            loss(total_loss)
-        elbo = -loss.result()
-        print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
-                .format(epoch, elbo, end_time - start_time))
         generate_and_save_images(model, epoch, test_sample, file_path)
         generate_and_save_images(model, epoch, r_sample, "rotate_image")
         if (epoch + 1) % 10 == 0:
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
                                                         ckpt_save_path))
+            for test_x in test_dataset:
+                d = np.radians(random.randint(30, 90))
+                r_x = rotate(test_x, d)
+                total_loss = rota_cross_loss(model, test_x, d) \
+                             + ori_cross_loss(model, test_x, d) \
+                             + compute_loss(model, test_x) \
+                             + reconstruction_loss(model, r_x)
+                loss(total_loss)
+            elbo = -loss.result()
+            print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
+                  .format(epoch, elbo, end_time - start_time))
 
 
 
@@ -181,33 +181,24 @@ if __name__ == '__main__':
     data_images = preprocess_images(data_set)
     train_size = 50000
     batch_size = 32
-    test_size = data_images.shape[0] - train_size
-    train_images = data_images[:train_size]
-    test_images = data_images[train_size:]
-
-    train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
-                     .shuffle(train_size).batch(batch_size))
-    test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
-                    .shuffle(test_size).batch(batch_size))
     epochs = 10
     latent_dim = 8
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, 10])
-    for i in range(1,2):
+    for i in range(1,5):
         model = CVAE(latent_dim=latent_dim, beta=3)
-        train_size = 50000
+        train_size = i * 1000
         batch_size = 32
         test_size = data_images.shape[0] - train_size
         train_images = data_images[:train_size]
         test_images = data_images[train_size:]
-
         train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
                          .shuffle(train_size).batch(batch_size))
         test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                         .shuffle(test_size).batch(batch_size))
         date = '3_2/'
         str_i = str(i)
-        file_path = 'new_test'
+        file_path = 'sample_test' + str_i
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
 
