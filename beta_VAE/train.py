@@ -189,7 +189,7 @@ if __name__ == '__main__':
                      .shuffle(train_size).batch(batch_size))
     test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                     .shuffle(test_size).batch(batch_size))
-    epochs = 100
+    epochs = 10
     latent_dim = 8
     num_examples_to_generate = 16
     random_vector_for_generation = tf.random.normal(
