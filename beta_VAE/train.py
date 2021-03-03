@@ -1,6 +1,6 @@
 from tensorflow.keras.datasets import fashion_mnist
 import tensorflow as tf
-from model import CVAE
+from model import CVAE, Classifier
 from dataset import preprocess_images
 from tensorflow_addons.image import rotate
 import random
@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from IPython import display
+import pandas as pd
 
 optimizer = tf.keras.optimizers.Adam(1e-4)
 mbs = tf.losses.MeanAbsoluteError()
@@ -161,6 +162,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
                                                         ckpt_save_path))
+            compute_and_save_mnist_score(model, epoch, test_dataset, file_path)
             for test_x in test_dataset:
                 d = np.radians(random.randint(30, 90))
                 r_x = rotate(test_x, d)
@@ -173,30 +175,89 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                   .format(epoch, elbo, end_time - start_time))
 
-
+def compute_and_save_mnist_score(model, classifier, X, epoch, filePath):
+    in_range_socres = []
+    mean, logvar = model.encode(X)
+    r_m = np.identity(model.latent_dim)
+    z = model.reparameterize(mean, logvar)
+    for i in range(0, 100, 10):
+        theta = np.radians(i)
+        c, s = np.cos(theta), np.sin(theta)
+        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
+        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
+        phi_z = model.sample(rota_z)
+        scores = classifier.mnist_score(phi_z)
+        in_range_socres.append(scores)
+    in_range_mean, in_range_locvar = np.mean(in_range_socres), np.std(in_range_socres)
+    out_range_30 = []
+    for i in range(100, 150, 10):
+        theta = np.radians(i)
+        c, s = np.cos(theta), np.sin(theta)
+        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
+        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
+        phi_z = model.sample(rota_z)
+        scores = classifier.mnist_score(phi_z)
+        out_range_30.append(scores)
+    out_range_30_mean, out_range_30_logvar = np.mean(out_range_30), np.mean(out_range_30)
+    out_range_90 = []
+    for i in range(150, 190, 10):
+        theta = np.radians(i)
+        c, s = np.cos(theta), np.sin(theta)
+        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
+        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
+        phi_z = model.sample(rota_z)
+        scores = classifier.mnist_score(phi_z)
+        out_range_90.append(scores)
+    out_range_90_mean, out_range_90_logvar = np.mean(out_range_30), np.mean(out_range_30)
+    df = pd.DataFrame({
+        "in_range_mean":in_range_mean,
+        "in_range_locvar": in_range_locvar,
+        "out_range_30_mean":out_range_30_mean,
+        "out_range_30_std": out_range_30_logvar,
+        "out_range_90_mean": out_range_90_mean,
+        "out_range_90_std": out_range_90_logvar
+    }, index=[epoch])
+    file_dir = "./score/" + filePath
+    if not os.path.exists(file_dir):
+        os.makedirs(file_dir)
+    if not os.path.isfile(file_dir + '/filename.csv'):
+        df.to_csv(file_dir +'/filename.csv')
+    else:  # else it exists so append without writing the header
+        df.to_csv(file_dir + '/filename.csv', mode='a', header=False)
 
 
 if __name__ == '__main__':
-    (data_set, _), (_, _) = tf.keras.datasets.mnist.load_data()
-    data_images = preprocess_images(data_set)
-    train_size = 50000
+    (train_set, ), (test_dataset, test_labels) = tf.keras.datasets.mnist.load_data()
+    train_set = preprocess_images(train_set)
+    test_images = preprocess_images(test_dataset)
     batch_size = 32
-    epochs = 10
+    epochs = 30
     latent_dim = 8
     num_examples_to_generate = 16
+    test_size = 10000
+    test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
+                    .shuffle(test_size).batch(batch_size))
     random_vector_for_generation = tf.random.normal(
-        shape=[num_examples_to_generate, 10])
+        shape=[num_examples_to_generate, latent_dim])
+    classifier = Classifier(shape=(28, 28, 1))
+    c_t = test_dataset
+    c_l = test_labels
+    for d in range(0, 180, 10):
+        degree = np.radians(d, 180)
+        r_t = rotate(c_t, degree)
+        c_t = np.concatenate((c_t, r_t))
+        c_l = np.concatenate((c_l, test_labels))
+    classifier.compile(optimizer='adam',
+                 loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                 metrics=['accuracy'])
+    classifier.fit(c_t, c_l, epochs=30, verbose=0)
     for i in range(1,5):
         model = CVAE(latent_dim=latent_dim, beta=3)
         train_size = i * 1000
         batch_size = 32
-        test_size = data_images.shape[0] - train_size
-        train_images = data_images[:train_size]
-        test_images = data_images[train_size:]
+        train_images = train_set[:train_size]
         train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
                          .shuffle(train_size).batch(batch_size))
-        test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
-                        .shuffle(test_size).batch(batch_size))
         date = '3_2/'
         str_i = str(i)
         file_path = 'sample_test' + str_i
