@@ -1,4 +1,3 @@
-from tensorflow.keras.datasets import fashion_mnist
 import tensorflow as tf
 from model import CVAE, Classifier
 from dataset import preprocess_images
@@ -235,21 +234,15 @@ if __name__ == '__main__':
     latent_dim = 8
     num_examples_to_generate = 16
     test_size = 10000
-
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, latent_dim])
     classifier = Classifier(shape=(28, 28, 1))
-    c_t = test_images
-    c_l = test_labels
-    for d in range(0, 180, 10):
-        degree = np.radians(d)
-        r_t = rotate(test_images, degree)
-        c_t = np.concatenate((c_t, r_t))
-        c_l = np.concatenate((c_l, test_labels))
-    classifier.compile(optimizer='adam',
-                 loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                 metrics=['accuracy'])
-    classifier.fit(c_t, c_l, epochs=30, verbose=0)
+    classifier_path = checkpoint_path = "./checkpoints/classifier"
+    cls = tf.train.Checkpoint(classifier = classifier)
+    cls_manager = tf.train.CheckpointManager(cls, classifier_path)
+    if cls_manager.latest_checkpoint:
+        cls.restore(cls_manager.latest_checkpoint)
+        print('Latest checkpoint restored!!')
     for i in range(1,5):
         model = CVAE(latent_dim=latent_dim, beta=3)
         train_size = i * 1000
