@@ -115,7 +115,7 @@ def generate_and_save_images(model, epoch, test_sample, file_path):
 def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     @tf.function
     def train_step(model, x, optimizer):
-        for degree in range(30, 100, 10):
+        for degree in range(0, 100, 10):
             d = np.radians(degree)
             with tf.GradientTape() as tape:
                 r_x = rotate(x, d)
@@ -206,7 +206,7 @@ def compute_and_save_inception_score(model, filePath):
     df = pd.DataFrame({
             "in_range_fid":in_range_fid,
             "in_range_mean": in_range_inception_mean,
-            "in_range_lstd": in_range_inception_std,
+            "in_range_std": in_range_inception_std,
             "out_range_30_fid":out_range_30_fid,
             "out_range_30_mean": out_range_30_inception_mean,
             "out_range_30_std": out_range_30_inception_std,
