@@ -232,7 +232,7 @@ def compute_and_save_inception_score(model, filePath):
             "out_range_90_mean": out_range_90_inception_mean,
             "out_range_90_std": out_range_90_inception_std,
         }, index=[1])
-    file_dir = "./score/" + filePath
+    file_dir = "./score/" + date + filePath
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
     if not os.path.isfile(file_dir + '/inception_score.csv'):
@@ -285,7 +285,7 @@ def compute_and_save_mnist_score(model, classifier, epoch, filePath):
         "out_range_90_mean": out_range_90_mean,
         "out_range_90_std": out_range_90_logvar
     }, index=[epoch+1])
-    file_dir = "./score/" + filePath
+    file_dir = "./score/" + date + filePath
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
     if not os.path.isfile(file_dir + '/filename.csv'):
