@@ -235,16 +235,15 @@ if __name__ == '__main__':
     latent_dim = 8
     num_examples_to_generate = 16
     test_size = 10000
-    test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
-                    .shuffle(test_size).batch(batch_size))
+
     random_vector_for_generation = tf.random.normal(
         shape=[num_examples_to_generate, latent_dim])
     classifier = Classifier(shape=(28, 28, 1))
-    c_t = test_dataset
+    c_t = test_images
     c_l = test_labels
     for d in range(0, 180, 10):
         degree = np.radians(d)
-        r_t = rotate(c_t, degree)
+        r_t = rotate(test_images, degree)
         c_t = np.concatenate((c_t, r_t))
         c_l = np.concatenate((c_l, test_labels))
     classifier.compile(optimizer='adam',
@@ -258,6 +257,8 @@ if __name__ == '__main__':
         train_images = train_set[:train_size]
         train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
                          .shuffle(train_size).batch(batch_size))
+        test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
+                        .shuffle(test_size).batch(batch_size))
         date = '3_2/'
         str_i = str(i)
         file_path = 'sample_test' + str_i
