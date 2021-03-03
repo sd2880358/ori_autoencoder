@@ -215,7 +215,7 @@ def compute_and_save_mnist_score(model, classifier, epoch, filePath):
         "out_range_30_std": out_range_30_logvar,
         "out_range_90_mean": out_range_90_mean,
         "out_range_90_std": out_range_90_logvar
-    }, index=[epoch])
+    }, index=[epoch+1])
     file_dir = "./score/" + filePath
     if not os.path.exists(file_dir):
         os.makedirs(file_dir)
@@ -230,7 +230,7 @@ if __name__ == '__main__':
     train_set = preprocess_images(train_set)
     test_images = preprocess_images(test_dataset)
     batch_size = 32
-    epochs = 30
+    epochs = 100
     latent_dim = 8
     num_examples_to_generate = 16
     test_size = 10000
@@ -243,7 +243,7 @@ if __name__ == '__main__':
     if cls_manager.latest_checkpoint:
         cls.restore(cls_manager.latest_checkpoint)
         print('classifier checkpoint restored!!')
-    for i in range(1,5):
+    for i in range(1,6):
         model = CVAE(latent_dim=latent_dim, beta=3)
         train_size = i * 1000
         batch_size = 32
