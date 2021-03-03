@@ -54,4 +54,5 @@ class Inception_score(tf.keras.Model):
             ix_start, ix_end = i * n_part, (i + 1) * n_part
             subset_X = prediction[ix_start:ix_end, :]
             score_list.append(self.inception_score(subset_X, eps))
-        return fid, score_list
+        is_avg, is_std = np.mean(score_list), np.std(score_list)
+        return fid, is_avg, is_std

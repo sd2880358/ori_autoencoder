@@ -177,50 +177,32 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
 
     compute_and_save_inception_score(model, file_path)
 
-def compute_and_save_inception_score(model, filePath):
-    start_time = time.time()
-    in_range_socres = []
+def compute_inception_score(model, d):
     mean, logvar = model.encode(test_images)
     r_m = np.identity(model.latent_dim)
     z = model.reparameterize(mean, logvar)
-    for i in range(0, 100, 10):
-        theta = np.radians(i)
-        r_x = rotate(test_images, theta)
-        c, s = np.cos(theta), np.sin(theta)
-        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
-        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
-        phi_x = model.sample(rota_z)
-        scores = inception_model.compute_score(r_x, phi_x)
-        in_range_socres.append(scores)
-    in_range_fid= np.mean(in_range_socres[:, 0])
-    in_range_inception_mean, in_range_inception_std = np.mean(in_range_socres[:, 1]), \
-                                                      np.std(in_range_socres[:, 1])
-    out_range_30 = []
-    for i in range(100, 150, 10):
-        theta = np.radians(i)
-        r_x = rotate(test_images, theta)
-        c, s = np.cos(theta), np.sin(theta)
-        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
-        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
-        phi_x = model.sample(rota_z)
-        scores = inception_model.compute_score(r_x, phi_x)
-        out_range_30.append(scores)
-    out_range_30_fid = np.mean(out_range_30[:, 0])
-    out_range_30_inception_mean, out_range_30_inception_std = np.mean(out_range_30[:, 1]), \
-                                                              np.std(out_range_30[:, 1])
-    out_range_90 = []
-    for i in range(150, 190, 10):
-        theta = np.radians(i)
-        r_x = rotate(test_images, theta)
-        c, s = np.cos(theta), np.sin(theta)
-        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
-        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
-        phi_x = model.sample(rota_z)
-        scores = inception_model.compute_score(r_x, phi_x)
-        out_range_90.append(scores)
-    out_range_90_fid = np.mean(out_range_90[:, 0])
-    out_range_90_inception_mean, out_range_90_inception_std = np.mean(out_range_90[:, 1]), \
-                                                              np.std(out_range_90[:, 1])
+    r_x = rotate(test_images, d)
+    c, s = np.cos(d), np.sin(d)
+    r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
+    rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
+    phi_x = model.sample(rota_z)
+    return inception_model.compute_score(r_x, phi_x)
+
+
+def compute_and_save_inception_score(model, filePath):
+    start_time = time.time()
+    in_range = np.random.randint(0,90)
+    in_range_fid, \
+    in_range_inception_mean, \
+    in_range_inception_std = compute_and_save_inception_score(model, in_range)
+    out_range_30 = np.random.randint(91, 140)
+    out_range_30_fid, \
+    out_range_30_inception_mean, \
+    out_range_30_inception_std = compute_inception_score(model, out_range_30)
+    out_range_90 = np.random.randint(141, 180)
+    out_range_90_fid, \
+    out_range_90_inception_mean, \
+    out_range_90_inception_std = compute_inception_score(model, out_range_90)
     df = pd.DataFrame({
             "in_range_fid":in_range_fid,
             "in_range_mean": in_range_inception_mean,
