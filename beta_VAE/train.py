@@ -194,8 +194,8 @@ def compute_and_save_inception_score(model, filePath):
     in_range = random.randint(0,90)
     in_range_fid, \
     in_range_inception_mean, \
-    in_range_inception_std = compute_and_save_inception_score(model, in_range)
-    out_range_30 = andom.randint(91, 140)
+    in_range_inception_std = compute_inception_score(model, in_range)
+    out_range_30 = random.randint(91, 140)
     out_range_30_fid, \
     out_range_30_inception_mean, \
     out_range_30_inception_std = compute_inception_score(model, out_range_30)
