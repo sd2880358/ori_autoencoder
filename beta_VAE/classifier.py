@@ -22,7 +22,7 @@ classifier.fit(c_t, c_l, epochs=30, verbose=0)
 filePath = "./classifier"
 checkpoint_path = "./checkpoints/" + filePath
 ckpt = tf.train.Checkpoint(classifier=classifier)
-ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path)
+ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
 ckpt_save_path = ckpt_manager.save()
 print('Saving checkpoint for epoch {} at {}'.format(1,
                                                     ckpt_save_path))

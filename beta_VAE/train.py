@@ -239,7 +239,7 @@ if __name__ == '__main__':
     classifier = Classifier(shape=(28, 28, 1))
     classifier_path = checkpoint_path = "./checkpoints/classifier"
     cls = tf.train.Checkpoint(classifier = classifier)
-    cls_manager = tf.train.CheckpointManager(cls, classifier_path)
+    cls_manager = tf.train.CheckpointManager(cls, classifier_path, max_to_keep=5)
     if cls_manager.latest_checkpoint:
         cls.restore(cls_manager.latest_checkpoint)
         print('Latest checkpoint restored!!')
