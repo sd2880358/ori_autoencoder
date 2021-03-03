@@ -190,7 +190,7 @@ def compute_and_save_inception_score(model, filePath):
         r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
         rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
         phi_x = model.sample(rota_z)
-        scores = inception_model.compute_scores(r_x, phi_x)
+        scores = inception_model.compute_score(r_x, phi_x)
         in_range_socres.append(scores)
     in_range_fid= np.mean(in_range_socres[:, 0])
     in_range_inception_mean, in_range_inception_std = np.mean(in_range_socres[:, 1]), \
@@ -203,7 +203,7 @@ def compute_and_save_inception_score(model, filePath):
         r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
         rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
         phi_x = model.sample(rota_z)
-        scores = inception_model.compute_scores(r_x, phi_x)
+        scores = inception_model.compute_score(r_x, phi_x)
         out_range_30.append(scores)
     out_range_30_fid = np.mean(out_range_30[:, 0])
     out_range_30_inception_mean, out_range_30_inception_std = np.mean(out_range_30[:, 1]), \
@@ -216,7 +216,7 @@ def compute_and_save_inception_score(model, filePath):
         r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
         rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
         phi_x = model.sample(rota_z)
-        scores = inception_model.compute_scores(r_x, phi_x)
+        scores = inception_model.compute_score(r_x, phi_x)
         out_range_90.append(scores)
     out_range_90_fid = np.mean(out_range_90[:, 0])
     out_range_90_inception_mean, out_range_90_inception_std = np.mean(out_range_90[:, 1]), \
