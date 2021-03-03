@@ -161,7 +161,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
                                                         ckpt_save_path))
-            compute_and_save_mnist_score(model, classifier, test_dataset, epoch, file_path)
+            compute_and_save_mnist_score(model, classifier, epoch, file_path)
             for test_x in test_dataset:
                 d = np.radians(random.randint(30, 90))
                 r_x = rotate(test_x, d)
@@ -242,7 +242,7 @@ if __name__ == '__main__':
     cls_manager = tf.train.CheckpointManager(cls, classifier_path, max_to_keep=5)
     if cls_manager.latest_checkpoint:
         cls.restore(cls_manager.latest_checkpoint)
-        print('Latest checkpoint restored!!')
+        print('classifier checkpoint restored!!')
     for i in range(1,5):
         model = CVAE(latent_dim=latent_dim, beta=3)
         train_size = i * 1000
