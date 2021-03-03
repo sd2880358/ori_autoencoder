@@ -191,15 +191,15 @@ def compute_inception_score(model, d):
 
 def compute_and_save_inception_score(model, filePath):
     start_time = time.time()
-    in_range = np.random.randint(0,90)
+    in_range = random.randint(0,90)
     in_range_fid, \
     in_range_inception_mean, \
     in_range_inception_std = compute_and_save_inception_score(model, in_range)
-    out_range_30 = np.random.randint(91, 140)
+    out_range_30 = andom.randint(91, 140)
     out_range_30_fid, \
     out_range_30_inception_mean, \
     out_range_30_inception_std = compute_inception_score(model, out_range_30)
-    out_range_90 = np.random.randint(141, 180)
+    out_range_90 = random.randint(141, 180)
     out_range_90_fid, \
     out_range_90_inception_mean, \
     out_range_90_inception_std = compute_inception_score(model, out_range_90)
