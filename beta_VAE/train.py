@@ -227,7 +227,7 @@ def compute_and_save_mnist_score(model, classifier, X, epoch, filePath):
 
 
 if __name__ == '__main__':
-    (train_set, ), (test_dataset, test_labels) = tf.keras.datasets.mnist.load_data()
+    (train_set, train_labels), (test_dataset, test_labels) = tf.keras.datasets.mnist.load_data()
     train_set = preprocess_images(train_set)
     test_images = preprocess_images(test_dataset)
     batch_size = 32
