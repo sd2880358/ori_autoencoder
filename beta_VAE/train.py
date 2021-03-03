@@ -10,6 +10,7 @@ import numpy as np
 import os
 from IPython import display
 import pandas as pd
+from inception_score import Inception_score
 
 optimizer = tf.keras.optimizers.Adam(1e-4)
 mbs = tf.losses.MeanAbsoluteError()
@@ -174,6 +175,74 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                   .format(epoch, elbo, end_time - start_time))
 
+    compute_and_save_inception_score(model, file_path)
+
+def compute_and_save_inception_score(model, filePath):
+    start_time = time.time()
+    in_range_socres = []
+    mean, logvar = model.encode(test_images)
+    r_m = np.identity(model.latent_dim)
+    z = model.reparameterize(mean, logvar)
+    for i in range(0, 100, 10):
+        theta = np.radians(i)
+        r_x = rotate(test_images, theta)
+        c, s = np.cos(theta), np.sin(theta)
+        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
+        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
+        phi_x = model.sample(rota_z)
+        scores = inception_model.compute_scores(r_x, phi_x)
+        in_range_socres.append(scores)
+    in_range_fid= np.mean(in_range_socres[:, 0])
+    in_range_inception_mean, in_range_inception_std = np.mean(in_range_socres[:, 1]), \
+                                                      np.std(in_range_socres[:, 1])
+    out_range_30 = []
+    for i in range(100, 150, 10):
+        theta = np.radians(i)
+        r_x = rotate(test_images, theta)
+        c, s = np.cos(theta), np.sin(theta)
+        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
+        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
+        phi_x = model.sample(rota_z)
+        scores = inception_model.compute_scores(r_x, phi_x)
+        out_range_30.append(scores)
+    out_range_30_fid = np.mean(out_range_30[:, 0])
+    out_range_30_inception_mean, out_range_30_inception_std = np.mean(out_range_30[:, 1]), \
+                                                              np.std(out_range_30[:, 1])
+    out_range_90 = []
+    for i in range(150, 190, 10):
+        theta = np.radians(i)
+        r_x = rotate(test_images, theta)
+        c, s = np.cos(theta), np.sin(theta)
+        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
+        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
+        phi_x = model.sample(rota_z)
+        scores = inception_model.compute_scores(r_x, phi_x)
+        out_range_90.append(scores)
+    out_range_90_fid = np.mean(out_range_90[:, 0])
+    out_range_90_inception_mean, out_range_90_inception_std = np.mean(out_range_90[:, 1]), \
+                                                              np.std(out_range_90[:, 1])
+    df = pd.DataFrame({
+            "in_range_fid":in_range_fid,
+            "in_range_mean": in_range_inception_mean,
+            "in_range_lstd": in_range_inception_std,
+            "out_range_30_fid":out_range_30_fid,
+            "out_range_30_mean": out_range_30_inception_mean,
+            "out_range_30_std": out_range_30_inception_std,
+            "out_range_90_fid":out_range_90_fid,
+            "out_range_90_mean": out_range_90_inception_mean,
+            "out_range_90_std": out_range_90_inception_std,
+        }, index=[1])
+    file_dir = "./score/" + filePath
+    if not os.path.exists(file_dir):
+        os.makedirs(file_dir)
+    if not os.path.isfile(file_dir + '/inception_score.csv'):
+        df.to_csv(file_dir +'/inception_score.csv')
+    else:  # else it exists so append without writing the header
+        df.to_csv(file_dir + '/inception_score.csv', mode='a', header=False)
+    end_time = time.time()
+    print("total compute inception time {}".format(start_time-end_time))
+
+
 def compute_and_save_mnist_score(model, classifier, epoch, filePath):
     in_range_socres = []
     mean, logvar = model.encode(test_images)
@@ -230,7 +299,7 @@ if __name__ == '__main__':
     train_set = preprocess_images(train_set)
     test_images = preprocess_images(test_dataset)
     batch_size = 32
-    epochs = 100
+    epochs = 10
     latent_dim = 8
     num_examples_to_generate = 16
     test_size = 10000
@@ -240,6 +309,7 @@ if __name__ == '__main__':
     classifier_path = checkpoint_path = "./checkpoints/classifier"
     cls = tf.train.Checkpoint(classifier = classifier)
     cls_manager = tf.train.CheckpointManager(cls, classifier_path, max_to_keep=5)
+    inception_model = Inception_score()
     if cls_manager.latest_checkpoint:
         cls.restore(cls_manager.latest_checkpoint)
         print('classifier checkpoint restored!!')
@@ -252,7 +322,7 @@ if __name__ == '__main__':
                          .shuffle(train_size).batch(batch_size))
         test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                         .shuffle(test_size).batch(batch_size))
-        date = '3_2/'
+        date = '3_3/'
         str_i = str(i)
         file_path = 'sample_test' + str_i
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
