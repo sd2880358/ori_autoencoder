@@ -243,7 +243,7 @@ if __name__ == '__main__':
     c_t = test_dataset
     c_l = test_labels
     for d in range(0, 180, 10):
-        degree = np.radians(d, 180)
+        degree = np.radians(d)
         r_t = rotate(c_t, degree)
         c_t = np.concatenate((c_t, r_t))
         c_l = np.concatenate((c_l, test_labels))
