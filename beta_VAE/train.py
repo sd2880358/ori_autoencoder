@@ -174,9 +174,9 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                   .format(epoch, elbo, end_time - start_time))
 
-def compute_and_save_mnist_score(model, classifier, X, epoch, filePath):
+def compute_and_save_mnist_score(model, classifier, epoch, filePath):
     in_range_socres = []
-    mean, logvar = model.encode(X)
+    mean, logvar = model.encode(test_images)
     r_m = np.identity(model.latent_dim)
     z = model.reparameterize(mean, logvar)
     for i in range(0, 100, 10):
