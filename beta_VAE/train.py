@@ -158,7 +158,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         loss = tf.keras.metrics.Mean()
         generate_and_save_images(model, epoch, test_sample, file_path)
         generate_and_save_images(model, epoch, r_sample, "rotate_image")
-        if epoch == epochs-1:
+        if epoch == epochs:
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
                                                         ckpt_save_path))
