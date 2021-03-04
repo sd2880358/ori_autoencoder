@@ -302,7 +302,7 @@ if __name__ == '__main__':
     for i in range(10,1, -1):
         epochs = 0
         model = CVAE(latent_dim=latent_dim, beta=3)
-        train_size = i * 1000
+        train_size = i * 100
         batch_size = 32
         train_images = train_set[:train_size]
         train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
