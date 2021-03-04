@@ -150,7 +150,6 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     generate_and_save_images(model, 0, test_sample, file_path)
     generate_and_save_images(model, 0, r_sample, "rotate_image")
     display.clear_output(wait=False)
-    mean, logvar = model.encode(test_images)
     score = np.mean(compute_mnist_score(model, classifier, initial=True))
     while (score <= 6.5):
         start_time = time.time()
@@ -177,7 +176,9 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                   .format(epochs, elbo, end_time - start_time))
         epochs += 1
+        print(epochs)
         score = np.mean(compute_mnist_score(model, classifier, initial=True))
+        print(score)
     #compute_and_save_inception_score(model, file_path)
 
 def compute_inception_score(model, d):
@@ -285,7 +286,6 @@ if __name__ == '__main__':
     train_set = preprocess_images(train_set)
     test_images = preprocess_images(test_dataset)
     batch_size = 32
-    epochs = 0
     latent_dim = 8
     num_examples_to_generate = 16
     test_size = 10000
@@ -300,6 +300,7 @@ if __name__ == '__main__':
         cls.restore(cls_manager.latest_checkpoint)
         print('classifier checkpoint restored!!')
     for i in range(10,1, -1):
+        epochs = 0
         model = CVAE(latent_dim=latent_dim, beta=3)
         train_size = i * 1000
         batch_size = 32
