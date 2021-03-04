@@ -175,10 +175,9 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             elbo = -loss.result()
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                   .format(epochs, elbo, end_time - start_time))
+            print('The current score is {}', score)
         epochs += 1
-        print(epochs)
         score = np.mean(compute_mnist_score(model, classifier, initial=True))
-        print(score)
     #compute_and_save_inception_score(model, file_path)
 
 def compute_inception_score(model, d):
