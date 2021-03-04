@@ -158,7 +158,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         loss = tf.keras.metrics.Mean()
         generate_and_save_images(model, epoch, test_sample, file_path)
         generate_and_save_images(model, epoch, r_sample, "rotate_image")
-        if (epoch + 1) % 10 == 0:
+        if epoch == epochs-1:
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
                                                         ckpt_save_path))
@@ -175,7 +175,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                   .format(epoch, elbo, end_time - start_time))
 
-    compute_and_save_inception_score(model, file_path)
+    #compute_and_save_inception_score(model, file_path)
 
 def compute_inception_score(model, d):
     mean, logvar = model.encode(test_images)
@@ -222,7 +222,7 @@ def compute_and_save_inception_score(model, filePath):
     else:  # else it exists so append without writing the header
         df.to_csv(file_dir + '/inception_score.csv', mode='a', header=False)
     end_time = time.time()
-    print("total compute inception time {}".format(start_time-end_time))
+    print("total compute inception time {}".format(end_time-start_time))
 
 
 def compute_and_save_mnist_score(model, classifier, epoch, filePath):
@@ -258,7 +258,7 @@ def compute_and_save_mnist_score(model, classifier, epoch, filePath):
         phi_z = model.sample(rota_z)
         scores = classifier.mnist_score(phi_z)
         out_range_90.append(scores)
-    out_range_90_mean, out_range_90_logvar = np.mean(out_range_30), np.mean(out_range_30)
+    out_range_90_mean, out_range_90_logvar = np.mean(out_range_90), np.mean(out_range_90)
     df = pd.DataFrame({
         "in_range_mean":in_range_mean,
         "in_range_locvar": in_range_locvar,
