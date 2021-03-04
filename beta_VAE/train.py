@@ -151,9 +151,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     generate_and_save_images(model, 0, r_sample, "rotate_image")
     display.clear_output(wait=False)
     mean, logvar = model.encode(test_images)
-    r_m = np.identity(model.latent_dim)
-    z = model.reparameterize(mean, logvar)
-    score = compute_mnist_score(model, classifier, initial=True)
+    score = np.mean(compute_mnist_score(model, classifier, initial=True))
     while (score <= 6.5):
         start_time = time.time()
         for train_x in train_dataset:
@@ -179,7 +177,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                   .format(epochs, elbo, end_time - start_time))
         epochs += 1
-        score = compute_mnist_score(model, classifier, initial=True)
+        score = np.mean(compute_mnist_score(model, classifier, initial=True))
     #compute_and_save_inception_score(model, file_path)
 
 def compute_inception_score(model, d):
@@ -234,6 +232,7 @@ def compute_mnist_score(model, classifier, z=0, d=0, r_m=0, initial=False):
         mean, logvar = model.encode(test_images)
         r_m = np.identity(model.latent_dim)
         z = model.reparameterize(mean, logvar)
+        d = np.radians(random.randint(0, 90))
     c, s = np.cos(d), np.sin(d)
     r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
     rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
