@@ -150,19 +150,23 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     generate_and_save_images(model, 0, test_sample, file_path)
     generate_and_save_images(model, 0, r_sample, "rotate_image")
     display.clear_output(wait=False)
-    for epoch in range(1, epochs + 1):
+    mean, logvar = model.encode(test_images)
+    r_m = np.identity(model.latent_dim)
+    z = model.reparameterize(mean, logvar)
+    score = compute_mnist_score(model, classifier, initial=True)
+    while (score <= 6.5):
         start_time = time.time()
         for train_x in train_dataset:
             train_step(model, train_x, optimizer)
         end_time = time.time()
         loss = tf.keras.metrics.Mean()
-        generate_and_save_images(model, epoch, test_sample, file_path)
-        generate_and_save_images(model, epoch, r_sample, "rotate_image")
-        if epoch == epochs:
+        generate_and_save_images(model, epochs, test_sample, file_path)
+        generate_and_save_images(model, epochs, r_sample, "rotate_image")
+        if (epochs + 1)%10 == 0:
             ckpt_save_path = ckpt_manager.save()
-            print('Saving checkpoint for epoch {} at {}'.format(epoch + 1,
+            print('Saving checkpoint for epoch {} at {}'.format(epochs + 1,
                                                         ckpt_save_path))
-            compute_and_save_mnist_score(model, classifier, epoch, file_path)
+            compute_and_save_mnist_score(model, classifier, epochs, file_path)
             for test_x in test_dataset:
                 d = np.radians(random.randint(30, 90))
                 r_x = rotate(test_x, d)
@@ -173,8 +177,9 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
                 loss(total_loss)
             elbo = -loss.result()
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
-                  .format(epoch, elbo, end_time - start_time))
-
+                  .format(epochs, elbo, end_time - start_time))
+        epochs += 1
+        score = compute_mnist_score(model, classifier, initial=True)
     #compute_and_save_inception_score(model, file_path)
 
 def compute_inception_score(model, d):
@@ -224,6 +229,18 @@ def compute_and_save_inception_score(model, filePath):
     end_time = time.time()
     print("total compute inception time {}".format(end_time-start_time))
 
+def compute_mnist_score(model, classifier, z=0, d=0, r_m=0, initial=False):
+    if (initial==True):
+        mean, logvar = model.encode(test_images)
+        r_m = np.identity(model.latent_dim)
+        z = model.reparameterize(mean, logvar)
+    c, s = np.cos(d), np.sin(d)
+    r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
+    rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
+    phi_z = model.sample(rota_z)
+    scores = classifier.mnist_score(phi_z)
+    return scores
+
 
 def compute_and_save_mnist_score(model, classifier, epoch, filePath):
     in_range_socres = []
@@ -232,31 +249,19 @@ def compute_and_save_mnist_score(model, classifier, epoch, filePath):
     z = model.reparameterize(mean, logvar)
     for i in range(0, 100, 10):
         theta = np.radians(i)
-        c, s = np.cos(theta), np.sin(theta)
-        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
-        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
-        phi_z = model.sample(rota_z)
-        scores = classifier.mnist_score(phi_z)
+        scores = compute_mnist_score(model, classifier, z, theta, r_m)
         in_range_socres.append(scores)
     in_range_mean, in_range_locvar = np.mean(in_range_socres), np.std(in_range_socres)
     out_range_30 = []
     for i in range(100, 150, 10):
         theta = np.radians(i)
-        c, s = np.cos(theta), np.sin(theta)
-        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
-        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
-        phi_z = model.sample(rota_z)
-        scores = classifier.mnist_score(phi_z)
+        scores = compute_mnist_score(model, classifier, z, theta, r_m)
         out_range_30.append(scores)
     out_range_30_mean, out_range_30_logvar = np.mean(out_range_30), np.mean(out_range_30)
     out_range_90 = []
     for i in range(150, 190, 10):
         theta = np.radians(i)
-        c, s = np.cos(theta), np.sin(theta)
-        r_m[0, [0, 1]], r_m[1, [0, 1]] = [c, s], [-s, c]
-        rota_z = matvec(tf.cast(r_m, dtype=tf.float32), z)
-        phi_z = model.sample(rota_z)
-        scores = classifier.mnist_score(phi_z)
+        scores = compute_mnist_score(model, classifier, z, theta, r_m)
         out_range_90.append(scores)
     out_range_90_mean, out_range_90_logvar = np.mean(out_range_90), np.mean(out_range_90)
     df = pd.DataFrame({
@@ -281,7 +286,7 @@ if __name__ == '__main__':
     train_set = preprocess_images(train_set)
     test_images = preprocess_images(test_dataset)
     batch_size = 32
-    epochs = 1
+    epochs = 0
     latent_dim = 8
     num_examples_to_generate = 16
     test_size = 10000
@@ -295,7 +300,7 @@ if __name__ == '__main__':
     if cls_manager.latest_checkpoint:
         cls.restore(cls_manager.latest_checkpoint)
         print('classifier checkpoint restored!!')
-    for i in range(1,6):
+    for i in range(10,1, -1):
         model = CVAE(latent_dim=latent_dim, beta=3)
         train_size = i * 1000
         batch_size = 32
@@ -304,7 +309,7 @@ if __name__ == '__main__':
                          .shuffle(train_size).batch(batch_size))
         test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                         .shuffle(test_size).batch(batch_size))
-        date = '3_3/'
+        date = '3_4/'
         str_i = str(i)
         file_path = 'sample_test' + str_i
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
