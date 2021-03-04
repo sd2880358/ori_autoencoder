@@ -1,6 +1,6 @@
 import tensorflow as tf
 from model import CVAE, Classifier
-from dataset import preprocess_images
+from dataset import preprocess_images, divide_dataset
 from tensorflow_addons.image import rotate
 import random
 import time
@@ -151,15 +151,17 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     generate_and_save_images(model, 0, r_sample, "rotate_image")
     display.clear_output(wait=False)
     score = np.mean(compute_mnist_score(model, classifier, initial=True))
-    while (score <= 6.5):
+    while (score <= 6.7):
         start_time = time.time()
         for train_x in train_dataset:
             train_step(model, train_x, optimizer)
         end_time = time.time()
         loss = tf.keras.metrics.Mean()
+        epochs += 1
+        score = np.mean(compute_mnist_score(model, classifier, initial=True))
         generate_and_save_images(model, epochs, test_sample, file_path)
         generate_and_save_images(model, epochs, r_sample, "rotate_image")
-        if (epochs + 1)%10 == 0:
+        if ((epochs + 1)%10 == 0) or (score > 6.7):
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epochs + 1,
                                                         ckpt_save_path))
@@ -176,8 +178,7 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
             print('Epoch: {}, Test set ELBO: {}, time elapse for current epoch: {}'
                   .format(epochs, elbo, end_time - start_time))
             print('The current score is {}', score)
-        epochs += 1
-        score = np.mean(compute_mnist_score(model, classifier, initial=True))
+
     #compute_and_save_inception_score(model, file_path)
 
 def compute_inception_score(model, d):
@@ -301,9 +302,10 @@ if __name__ == '__main__':
     for i in range(10,1, -1):
         epochs = 0
         model = CVAE(latent_dim=latent_dim, beta=3)
-        train_size = i * 100
+        sample_size = i * 100
+        train_size = sample_size * 10
         batch_size = 32
-        train_images = train_set[:train_size]
+        train_images = divide_dataset(train_set, train_labels, sample_size)
         train_dataset = (tf.data.Dataset.from_tensor_slices(train_images)
                          .shuffle(train_size).batch(batch_size))
         test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
