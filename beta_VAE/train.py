@@ -302,7 +302,7 @@ if __name__ == '__main__':
     for i in range(10,1, -1):
         epochs = 0
         model = CVAE(latent_dim=latent_dim, beta=3)
-        sample_size = i * 100
+        sample_size = i * 10
         train_size = sample_size * 10
         batch_size = 32
         train_images = divide_dataset(train_set, train_labels, sample_size)
