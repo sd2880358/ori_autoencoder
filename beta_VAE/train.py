@@ -299,7 +299,7 @@ if __name__ == '__main__':
     if cls_manager.latest_checkpoint:
         cls.restore(cls_manager.latest_checkpoint)
         print('classifier checkpoint restored!!')
-    for i in range(10,1, -1):
+    for i in range(10,0, -1):
         epochs = 0
         model = CVAE(latent_dim=latent_dim, beta=3)
         sample_size = i * 10
