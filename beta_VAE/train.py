@@ -302,7 +302,7 @@ if __name__ == '__main__':
     for i in range(10,0, -1):
         epochs = 0
         model = CVAE(latent_dim=latent_dim, beta=3)
-        sample_size = i * 10
+        sample_size = i * 1
         train_size = sample_size * 10
         batch_size = 32
         train_images = divide_dataset(train_set, train_labels, sample_size)
@@ -310,7 +310,7 @@ if __name__ == '__main__':
                          .shuffle(train_size).batch(batch_size))
         test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                         .shuffle(test_size).batch(batch_size))
-        date = '3_4/'
+        date = '3_8/'
         str_i = str(i)
         file_path = 'sample_test' + str_i
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
