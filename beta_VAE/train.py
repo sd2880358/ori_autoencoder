@@ -307,7 +307,7 @@ if __name__ == '__main__':
         train_size = sample_size * 10
         train_images = divide_dataset(train_set, train_labels, sample_size)
         '''
-        train_size = 60000
+        train_size = 10000
         train_images = train_set
         batch_size = 32
 
