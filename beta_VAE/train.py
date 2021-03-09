@@ -286,7 +286,7 @@ if __name__ == '__main__':
     train_set = preprocess_images(train_set)
     test_images = preprocess_images(test_dataset)
     batch_size = 32
-    latent_dim = 8
+    latent_dim = 2
     num_examples_to_generate = 16
     test_size = 10000
     random_vector_for_generation = tf.random.normal(
