@@ -150,7 +150,15 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
     generate_and_save_images(model, 0, test_sample, file_path)
     generate_and_save_images(model, 0, r_sample, "rotate_image")
     display.clear_output(wait=False)
-    score = np.mean(compute_mnist_score(model, classifier, initial=True))
+    in_range_socres = []
+    mean, logvar = model.encode(test_images)
+    r_m = np.identity(model.latent_dim)
+    z = model.reparameterize(mean, logvar)
+    for i in range(0, 100, 10):
+        theta = np.radians(i)
+        scores = compute_mnist_score(model, classifier, z, theta, r_m)
+        in_range_socres.append(scores)
+    score = np.mean(in_range_socres)
     while (score <= 6.7):
         start_time = time.time()
         for train_x in train_dataset:
@@ -158,9 +166,17 @@ def start_train(epochs, model, train_dataset, test_dataset, date, filePath):
         end_time = time.time()
         loss = tf.keras.metrics.Mean()
         epochs += 1
-        score = np.mean(compute_mnist_score(model, classifier, initial=True))
-        generate_and_save_images(model, epochs, test_sample, file_path)
-        generate_and_save_images(model, epochs, r_sample, "rotate_image")
+        in_range_socres = []
+        mean, logvar = model.encode(test_images)
+        r_m = np.identity(model.latent_dim)
+        z = model.reparameterize(mean, logvar)
+        for i in range(0, 100, 10):
+            theta = np.radians(i)
+            scores = compute_mnist_score(model, classifier, z, theta, r_m)
+            in_range_socres.append(scores)
+        score = np.mean(in_range_socres)
+        #generate_and_save_images(model, epochs, test_sample, file_path)
+        #generate_and_save_images(model, epochs, r_sample, "rotate_image")
         if ((epochs + 1)%10 == 0) or (score > 6.7):
             ckpt_save_path = ckpt_manager.save()
             print('Saving checkpoint for epoch {} at {}'.format(epochs + 1,
@@ -315,7 +331,7 @@ if __name__ == '__main__':
                          .shuffle(train_size).batch(batch_size))
         test_dataset = (tf.data.Dataset.from_tensor_slices(test_images)
                         .shuffle(test_size).batch(batch_size))
-        date = '3_9/'
+        date = '3_4/'
         str_i = str(i)
         file_path = 'sample_test' + str_i
         start_train(epochs, model, train_dataset, test_dataset, date, file_path)
