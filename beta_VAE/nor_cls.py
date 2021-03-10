@@ -9,6 +9,12 @@ import tensorflow as tf
 train_images = preprocess_images(train_set)
 test_images = preprocess_images(test_dataset)
 classifier = Classifier(shape=(28, 28, 1))
+classifier_path = checkpoint_path = "./checkpoints/classifier"
+cls = tf.train.Checkpoint(classifier=classifier)
+cls_manager = tf.train.CheckpointManager(cls, classifier_path, max_to_keep=5)
+if cls_manager.latest_checkpoint:
+    cls.restore(cls_manager.latest_checkpoint)
+    print('classifier checkpoint restored!!')
 c_t = train_images
 c_l = train_labels
 classifier.compile(optimizer='adam',
@@ -19,8 +25,6 @@ test_loss, test_acc = classifier.evaluate(test_images,  test_labels, verbose=2)
 print('\nTest accuracy:', test_acc)
 filePath = "./cls_nor"
 checkpoint_path = "./checkpoints/" + filePath
-ckpt = tf.train.Checkpoint(classifier=classifier)
-ckpt_manager = tf.train.CheckpointManager(ckpt, checkpoint_path, max_to_keep=5)
-ckpt_save_path = ckpt_manager.save()
+ckpt_save_path = cls_manager.save()
 print('Saving checkpoint for epoch {} at {}'.format(1,
                                                     ckpt_save_path))
