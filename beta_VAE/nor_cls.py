@@ -9,7 +9,7 @@ import tensorflow as tf
 train_images = preprocess_images(train_set)
 test_images = preprocess_images(test_dataset)
 classifier = Classifier(shape=(28, 28, 1))
-classifier_path = checkpoint_path = "./checkpoints/classifier"
+classifier_path = checkpoint_path = "./checkpoints/cls_nor"
 cls = tf.train.Checkpoint(classifier=classifier)
 cls_manager = tf.train.CheckpointManager(cls, classifier_path, max_to_keep=5)
 if cls_manager.latest_checkpoint:
